@@ -3,3 +3,4 @@ schedulesbackup.zip
 .vscode
 *__pycache__
 tasktracker/settings.py
+.idea

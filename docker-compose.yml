@@ -1,0 +1,62 @@
+# Copyright DWJ 2024.
+# Distributed under the Boost Software License, Version 1.0.
+# https://www.boost.org/LICENSE_1_0.txt
+
+version: "3.8"
+
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
+      - DJANGO_DEBUG=$DJANGO_DEBUG
+      - DJANGO_ALLOWED_HOSTS=$DJANGO_ALLOWED_HOSTS
+      - DB_NAME=$DB_NAME
+      - DB_USER=$DB_USER
+      - DB_PASSWORD=$DB_PASSWORD
+      - DB_HOST=$DB_HOST
+      - DB_PORT=$DB_PORT
+
+  db:
+    image: yobasystems/alpine-mariadb
+    command:
+      [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_520_ci",
+      ]
+    environment:
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_520_ci
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    expose:
+      - "3306"
+    volumes:
+      - mysql:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql:

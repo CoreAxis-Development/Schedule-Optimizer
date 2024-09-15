@@ -7,7 +7,6 @@ version: "3.8"
 services:
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
     depends_on:
@@ -22,6 +21,14 @@ services:
       - DB_PASSWORD=$DB_PASSWORD
       - DB_HOST=$DB_HOST
       - DB_PORT=$DB_PORT
+    volumes:
+      - ./data/custom_dump.json:/data/database_checkpoint.json
+      # - ./data/database_checkpoint_2.json:/data/database_checkpoint.json
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   db:
     image: yobasystems/alpine-mariadb

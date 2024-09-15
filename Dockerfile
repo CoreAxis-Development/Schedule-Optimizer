@@ -24,4 +24,4 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 
 # Run manage.py when the container launches
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py loaddata /data/database_checkpoint.json && python manage.py runserver 0.0.0.0:8000"]

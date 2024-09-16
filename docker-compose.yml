@@ -3,8 +3,9 @@
 # https://www.boost.org/LICENSE_1_0.txt
 
 services:
-  web:
+  django:
     build: .
+    pull_policy: build
     ports:
       - "${DJANGO_PORT:-8000}:8000"
     depends_on:
@@ -20,10 +21,9 @@ services:
       - DB_HOST=$DB_HOST
       - DB_PORT=$DB_PORT
     volumes:
-      - ./data/custom_dump.json:/data/database_checkpoint.json
-      # - ./data/database_checkpoint_2.json:/data/database_checkpoint.json
+      - ./data/:/data/
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail http://0.0.0.0:8000/ || exit 1"]
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/ || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 5

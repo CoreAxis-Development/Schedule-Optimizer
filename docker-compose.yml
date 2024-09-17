@@ -11,6 +11,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.schedule-optimizer.rule=Host(`scheduleoptimizer.uk.to`)"
+      - "traefik.http.routers.schedule-optimizer.entrypoints=websecure"
+      - "traefik.http.routers.schedule-optimizer.tls.certresolver=myresolver"
+      - "traefik.http.services.schedule-optimizer.loadbalancer.server.port=8000"
+
+      - "traefik.http.routers.schedule-optimizer-http.rule=Host(`scheduleoptimizer.uk.to`)"
+      - "traefik.http.routers.schedule-optimizer-http.entrypoints=web"
+      - "traefik.http.routers.schedule-optimizer-http.middlewares=https-redirect"
+
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
     environment:
       - DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
       - DJANGO_DEBUG=$DJANGO_DEBUG
@@ -22,6 +35,8 @@ services:
       - DB_PORT=$DB_PORT
     volumes:
       - ./data/:/data/
+    networks:
+      - traefik
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:8000/ || exit 1"]
       interval: 10s
@@ -46,6 +61,8 @@ services:
       - "3306"
     volumes:
       - mysql:/var/lib/mysql
+    networks:
+      - traefik
     restart: unless-stopped
     healthcheck:
       test:
@@ -65,3 +82,7 @@ services:
 
 volumes:
   mysql:
+
+networks:
+  traefik:
+    external: true

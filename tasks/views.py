@@ -446,3 +446,28 @@ def user_info(request):
             return JsonResponse({'error': str(e)}, status=500)
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+def fetch_all_yearly_tasks(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        year = data.get('year')
+        filter = data.get('filter', {})
+        buffer = data.get('buffer', 0)
+
+        # Adjust the logic to consider the buffer period
+        tasks = Task.objects.filter(user=request.user)
+        year_view = {}
+        for task in tasks:
+            task.user.user_profile.safety_buffer_days = buffer
+            task.save()
+            occurrences = task.all_task_occurences(year)
+            for month, days in occurrences.items():
+                if month not in year_view:
+                    year_view[month] = {}
+                for day in days:
+                    if day not in year_view[month]:
+                        year_view[month][day] = []
+                    year_view[month][day].append(task.json())
+
+        return JsonResponse(year_view)

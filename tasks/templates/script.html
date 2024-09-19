@@ -609,5 +609,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
     });
 
-
+    // Add this function to your script
+function updateBufferPeriod(buffer) {
+    const bufferDropdown = document.getElementById('buffer_dropdown1');
+    bufferDropdown.innerHTML = `<i class="bi bi-clock pe-1"></i>Buffer: ${buffer}`;
+    // Add any additional logic needed to handle the buffer period change
+}
 </script>

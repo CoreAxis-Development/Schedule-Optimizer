@@ -7,8 +7,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-08-09",
-        "scheduled_date": "2024-08-09",
-        "user": 2,
+        "user": 1,
         "location": 2
       }
     },
@@ -20,8 +19,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-09-02",
-        "scheduled_date": "2024-09-02",
-        "user": 2,
+        "user": 1,
         "location": 4
       }
     },
@@ -33,8 +31,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-08-21",
-        "scheduled_date": "2024-08-09",
-        "user": 2,
+        "user": 1,
         "location": 5
       }
     },
@@ -46,8 +43,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-08-15",
-        "scheduled_date": "2024-08-09",
-        "user": 2,
+        "user": 1,
         "location": 7
       }
     },
@@ -59,8 +55,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-08-27",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 8
       }
     },
@@ -72,8 +67,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-08-27",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 9
       }
     },
@@ -85,8 +79,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-09-03",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 11
       }
     },
@@ -98,8 +91,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-09-04",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 13
       }
     },
@@ -111,8 +103,7 @@
         "frequency": 28,
         "completion_hrs": 2,
         "due_date": "2024-08-09",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 14
       }
     },
@@ -124,8 +115,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-08-14",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 1
       }
     },
@@ -137,8 +127,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-09-05",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 2
       }
     },
@@ -150,8 +139,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-08-12",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 4
       }
     },
@@ -159,16 +147,14 @@
       "model": "tasks.task",
       "pk": 14,
       "fields": {
-        "name": "Test",
+        "name": "Battery Test Records",
         "frequency": 28,
         "completion_hrs": 3,
-        "due_date": "2024-09-19",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "due_date": "2024-08-16",
+        "user": 1,
         "location": 5
       }
     },
-
     {
       "model": "tasks.task",
       "pk": 15,
@@ -176,9 +162,8 @@
         "name": "Battery Test Records",
         "frequency": 28,
         "completion_hrs": 3,
-        "due_date": "2024-09-16",
-        "scheduled_date": "2024-09-15",
-        "user": 2,
+        "due_date": "2024-08-15",
+        "user": 1,
         "location": 7
       }
     },
@@ -190,8 +175,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-09-02",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 8
       }
     },
@@ -203,8 +187,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-08-19",
-        "scheduled_date": "2024-09-12",
-        "user": 2,
+        "user": 1,
         "location": 9
       }
     },
@@ -216,7 +199,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-09-03",
-        "user": 2,
+        "user": 1,
         "location": 11
       }
     },
@@ -228,7 +211,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-08-20",
-        "user": 2,
+        "user": 1,
         "location": 13
       }
     },
@@ -240,7 +223,7 @@
         "frequency": 28,
         "completion_hrs": 3,
         "due_date": "2024-08-26",
-        "user": 2,
+        "user": 1,
         "location": 14
       }
     },
@@ -252,7 +235,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-08-21",
-        "user": 2,
+        "user": 1,
         "location": 1
       }
     },
@@ -264,7 +247,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-08-27",
-        "user": 2,
+        "user": 1,
         "location": 2
       }
     },
@@ -276,7 +259,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-10-29",
-        "user": 2,
+        "user": 1,
         "location": 4
       }
     },
@@ -288,7 +271,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-10-14",
-        "user": 2,
+        "user": 1,
         "location": 5
       }
     },
@@ -300,7 +283,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-09-16",
-        "user": 2,
+        "user": 1,
         "location": 7
       }
     },
@@ -312,7 +295,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-10-15",
-        "user": 2,
+        "user": 1,
         "location": 8
       }
     },
@@ -324,7 +307,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-09-16",
-        "user": 2,
+        "user": 1,
         "location": 9
       }
     },
@@ -336,7 +319,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-08-26",
-        "user": 2,
+        "user": 1,
         "location": 11
       }
     },
@@ -348,7 +331,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-08-20",
-        "user": 2,
+        "user": 1,
         "location": 13
       }
     },
@@ -360,7 +343,7 @@
         "frequency": 91,
         "completion_hrs": 2,
         "due_date": "2024-11-04",
-        "user": 2,
+        "user": 1,
         "location": 14
       }
     },
@@ -372,7 +355,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-09-25",
-        "user": 2,
+        "user": 1,
         "location": 1
       }
     },
@@ -384,8 +367,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-09-12",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "user": 1,
         "location": 2
       }
     },
@@ -397,8 +379,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-10-14",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "user": 1,
         "location": 7
       }
     },
@@ -410,8 +391,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-11-18",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "user": 1,
         "location": 4
       }
     },
@@ -423,8 +403,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-09-25",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "user": 1,
         "location": 4
       }
     },
@@ -436,8 +415,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2025-02-17",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "user": 1,
         "location": 8
       }
     },
@@ -449,8 +427,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2025-04-04",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "user": 1,
         "location": 9
       }
     },
@@ -462,8 +439,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-09-26",
-        "scheduled_date": "2024-09-17",
-        "user": 2,
+        "user": 1,
         "location": 11
       }
     },
@@ -475,9 +451,20 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-09-04",
-        "scheduled_date": "2024-09-13",
-        "user": 2,
+        "user": 1,
         "location": 13
+      }
+    },
+    {
+      "model": "tasks.task",
+      "pk": 40,
+      "fields": {
+        "name": "Lamp Voltage (signal/crossing)",
+        "frequency": 365,
+        "completion_hrs": 3,
+        "due_date": "2024-09-17",
+        "user": 1,
+        "location": 14
       }
     },
     {
@@ -488,7 +475,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-12-24",
-        "user": 2,
+        "user": 1,
         "location": 1
       }
     },
@@ -500,7 +487,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-12-20",
-        "user": 2,
+        "user": 1,
         "location": 2
       }
     },
@@ -512,7 +499,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2025-06-16",
-        "user": 2,
+        "user": 1,
         "location": 4
       }
     },
@@ -524,7 +511,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2025-05-08",
-        "user": 2,
+        "user": 1,
         "location": 5
       }
     },
@@ -536,7 +523,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2025-04-18",
-        "user": 2,
+        "user": 1,
         "location": 7
       }
     },
@@ -548,7 +535,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2025-06-16",
-        "user": 2,
+        "user": 1,
         "location": 8
       }
     },
@@ -560,7 +547,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2025-05-28",
-        "user": 2,
+        "user": 1,
         "location": 9
       }
     },
@@ -572,7 +559,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-12-20",
-        "user": 2,
+        "user": 1,
         "location": 11
       }
     },
@@ -584,7 +571,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-12-09",
-        "user": 2,
+        "user": 1,
         "location": 13
       }
     },
@@ -596,7 +583,7 @@
         "frequency": 365,
         "completion_hrs": 3,
         "due_date": "2024-12-02",
-        "user": 2,
+        "user": 1,
         "location": 14
       }
     },
@@ -606,7 +593,7 @@
       "fields": {
         "name": "Kesler Rd",
         "milepost": 34.29,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -615,7 +602,7 @@
       "fields": {
         "name": "Caravan Ave",
         "milepost": 35.23,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -624,7 +611,7 @@
       "fields": {
         "name": "Glee Rd.",
         "milepost": 54.61,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -633,7 +620,7 @@
       "fields": {
         "name": "Harrison Ave",
         "milepost": 55.21,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -642,7 +629,7 @@
       "fields": {
         "name": "Shindler Rd",
         "milepost": 55.97,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -651,7 +638,7 @@
       "fields": {
         "name": "Jefferson St.",
         "milepost": 56.82,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -660,7 +647,7 @@
       "fields": {
         "name": "Carter Junction",
         "milepost": 58.24,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -669,7 +656,7 @@
       "fields": {
         "name": "Garrison Blvd",
         "milepost": 61.29,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -678,7 +665,7 @@
       "fields": {
         "name": "Chandler Ln",
         "milepost": 61.86,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -687,7 +674,7 @@
       "fields": {
         "name": "Morrison Ln",
         "milepost": 61.92,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -696,7 +683,7 @@
       "fields": {
         "name": "Patrick Ln",
         "milepost": 62.03,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -705,7 +692,7 @@
       "fields": {
         "name": "South St",
         "milepost": 62.18,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -714,7 +701,7 @@
       "fields": {
         "name": "Hoover Dr",
         "milepost": 80.41,
-        "user": 2
+        "user": 1
       }
     },
     {
@@ -723,7 +710,7 @@
       "fields": {
         "name": "Powell St",
         "milepost": 80.5,
-        "user": 2
+        "user": 1
       }
     }
     ]

@@ -34,7 +34,7 @@
         .catch(error => {
             console.error('Error:', error);
         });
-    }
+    }    
     //document.addEventListener('DOMContentLoaded', updateSelectedView);
     // Sub-view on Test Dates
     var selectedLocation = ""
@@ -108,314 +108,101 @@
         document.getElementById('year_dropdown').hidden = true;
     }
     // Daily Tasks & Availability 
-    let year_view;
-    let lastFetchedYear;
-    let previousFilter;
-    function addAvailability(year, month, day) {
-        // Get the date from the datestr
-        let date = new Date(Date.UTC(year, month - 1, day));
-        date.setUTCHours(0, 0, 0, 0);
-        let datestr = date.toISOString().split('T')[0];
-        // Get the availability for this date
-        const availability = JSON.parse("{{ user.user_profile.availability|safe }}".replace(/'/g, '"'));
-        const availabilityDate = availability[datestr] || 0;
-        // Find out how much free time is on the chosen date
+let year_view;
+let lastFetchedYear;
+let previousFilter;
 
-        var daily_tasks = year_view[month][day]
-        var total_work_hours = 8;
-        var freeTime = 8 + availabilityDate
-        if (daily_tasks) {
-            Object.entries(daily_tasks).forEach(([key, task]) => {
-                freeTime -= task.time_taken;
-            });
-        }
-        if (freeTime >= 0) {
-            // populate the modal
-            const hoursForm = document.getElementById('addAvailabilityForm');
-            hoursForm.reset();
-            const hoursInput = document.getElementById('add_hours');
-            hoursForm.dataset.freetime = freeTime;
-            document.getElementById('addAvailabilityModalLabel').textContent = `Add Availability to ${datestr}:`;
-            document.getElementById('add_task_list').innerHTML = "";
-            document.getElementById('add_task_list_label').hidden = true;
+function addAvailability(year, month, day) {
+    let date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCHours(0, 0, 0, 0);
+    let datestr = date.toISOString().split('T')[0];
+    const availability = JSON.parse("{{ user.user_profile.availability|safe }}".replace(/'/g, '"'));
+    const availabilityDate = availability[datestr] || 0;
+    var daily_tasks = year_view[month][day];
+    var total_work_hours = 8;
+    var freeTime = 8 + availabilityDate;
+    var cumulativeTaskTime = 0;
 
-            // Ensure the date input is not readonly and set its value
-            const addDateInput = document.getElementById('add_date');
-            addDateInput.readOnly = false;
-            addDateInput.value = datestr;
-            addDateInput.readOnly = true;
-            hoursInput.max = 8-freeTime;
-        }
+    if (daily_tasks) {
+        Object.entries(daily_tasks).forEach(([key, task]) => {
+            cumulativeTaskTime += task.time_taken;
+            freeTime -= task.time_taken;
+        });
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        const hoursForm = document.getElementById('addAvailabilityForm');
-        const hoursInput = document.getElementById('add_hours');
 
-        const taskListSelect = document.getElementById('add_task_list');
+    const hoursForm = document.getElementById('addAvailabilityForm');
+    hoursForm.reset();
+    const hoursInput = document.getElementById('add_hours');
+    hoursForm.dataset.freetime = freeTime;
+    hoursForm.dataset.cumulative = cumulativeTaskTime;
+    document.getElementById('addAvailabilityModalLabel').textContent = `Add Availability to ${datestr}:`;
 
-        hoursInput.addEventListener('input', function() {
-            const hours = this.value;
-            const freeTime = hoursForm.dataset.freetime;
-            var date = document.getElementById('add_date').value;
-            var bar_element = document.getElementById(`availability-bars-${date}`);
+    const addDateInput = document.getElementById('add_date');
+    addDateInput.value = datestr;
 
-            var total_work_hours = Array.from(bar_element.querySelectorAll(".bar.orange")).length || 0;
+    document.getElementById('cumulative-time').textContent = `Total task time for this day: ${cumulativeTaskTime} hours`;
 
+    hoursInput.max = 24 - (total_work_hours + availabilityDate);
+}
 
-            fetch(`/task_list_week/?date=${date}&hours=${hours}`)
-            .then(response => response.json())
-            .then(data => {
-                // returned data is a list of tasks in this format: {'name': task.name, 'time_taken': task.completion_hrs, "location": task.location.name,"due_date": task.due_date.strftime('%Y-%m-%d'),
-                // Update the task_list select options
-                taskListSelect.innerHTML = ''; // Clear existing options
-                // check the number of hours in the selected date
-                let b = false;
+function removeAvailability(year, month, day) {
+    let date = new Date(Date.UTC(year, month - 1, day));
+    date.setUTCHours(0, 0, 0, 0);
+    let datestr = date.toISOString().split('T')[0];
+    const availability = JSON.parse("{{ user.user_profile.availability|safe }}".replace(/'/g, '"'));
+    const availabilityDate = availability[datestr] || 0;
+    var daily_tasks = year_view[month][day];
+    var total_work_hours = 8;
+    var freeTime = total_work_hours + availabilityDate;
+    var cumulativeTaskTime = 0;
 
-                data.forEach(task => {
-                    if ((task.due_date >= date)) {
-                        const checkboxDiv = document.createElement('div');
-                        checkboxDiv.classList.add('form-check');
-                        if (!b) {
-                            b = true;
-                            // unset id = "remove_task_list_label" hidden
-                            document.getElementById('add_task_list_label').hidden = false;
-                        }
-
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.id = `task-${task.id}`;
-                        checkbox.name = 'task_list';
-                        checkbox.value = task.id;
-                        checkbox.dataset.time_taken = task.time_taken;
-                        checkbox.classList.add('form-check-input');
-                        checkboxDiv.appendChild(checkbox);
-                        if (task.time_taken - hours <= freeTime ) {
-                            checkbox.disabled = false;
-                        }
-                        else{
-                            checkbox.disabled = true;
-                        }
-
-                        const label = document.createElement('label');
-                        label.htmlFor = `task-${task.id}`;
-                        label.textContent = `${task.name} @ ${task.location} (${task.time_taken} hrs on ${task.due_date})`;
-                        label.classList.add('form-check-label');
-                        checkboxDiv.appendChild(label);
-
-                        taskListSelect.appendChild(checkboxDiv);
-                    }
-                });
-            })
-            .catch(error => console.error('Error:', error));
+    if (daily_tasks) {
+        Object.entries(daily_tasks).forEach(([key, task]) => {
+            cumulativeTaskTime += task.time_taken;
+            freeTime -= task.time_taken;
         });
-        // listener to check if the task_list select is changed, and remove every non selected element whose time_taken dataset attribute when summed with the selected would make the hours overflow past free_time
-        taskListSelect.addEventListener('input', function(event) {
-            const checkedBoxes = Array.from(taskListSelect.querySelectorAll('input[type="checkbox"]:checked'));
-            const selectedHours = checkedBoxes.reduce((total, checkbox) => total + parseInt(checkbox.dataset.time_taken), 0);
-            const freeTime = hoursForm.dataset.freetime;
-            let date = new Date(Date.UTC(year, month - 1, day));
-            date.setUTCHours(0, 0, 0, 0);
-            let datestr = date.toISOString().split('T')[0];
-            hours = document.getElementById('add_hours').value;
-
-            // Store the checked state of current checkboxes
-            const checkedState = {};
-            checkedBoxes.forEach(checkbox => {
-                checkedState[checkbox.value] = true;
-            });
-
-            fetch(`/task_list_week/?date=${datestr}`)
-            .then(response => response.json())
-            .then(data => {
-                // returned data is a list of tasks in this format: {'name': task.name, 'time_taken': task.completion_hrs, "location": task.location.name,"due_date": task.due_date.strftime('%Y-%m-%d'),
-                // Update the task_list checkboxes
-                taskListSelect.innerHTML = ''; // Clear existing checkboxes
-
-                data.forEach(task => {
-                    if (new Date(task.due_date) >= date) {
-                        const checkboxDiv = document.createElement('div');
-                        checkboxDiv.classList.add('form-check');
-
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.id = `task-${task.id}`;
-                        checkbox.name = 'task_list';
-                        checkbox.value = task.id;
-                        checkbox.dataset.time_taken = task.time_taken;
-                        checkbox.classList.add('form-check-input');
-
-                        // Restore checked state if it was checked before
-                        if (checkedState[task.id]) {
-                            checkbox.checked = true;
-                        } else if (parseFloat(task.time_taken) + parseFloat(selectedHours) <= parseFloat(freeTime) + parseFloat(hours)) {
-                            checkbox.disabled = false;
-                        } else {
-                            checkbox.disabled = true;
-                        }
-
-                        const label = document.createElement('label');
-                        label.htmlFor = `task-${task.id}`;
-                        label.textContent = `${task.name} @ ${task.location} (${task.time_taken} hrs on ${task.due_date})`;
-                        label.classList.add('form-check-label');
-
-                        checkboxDiv.appendChild(checkbox);
-                        checkboxDiv.appendChild(label);
-                        taskListSelect.appendChild(checkboxDiv);
-                    }
-                });
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
-    });
-    function removeAvailability(year, month, day) {
-        let date = new Date(Date.UTC(year, month - 1, day));
-        date.setUTCHours(0, 0, 0, 0);
-        const hoursInput = document.getElementById('remove_hours');
-        let datestr = date.toISOString().split('T')[0];
-        const availability = JSON.parse("{{ user.user_profile.availability|safe }}".replace(/'/g, '"'));
-        const availabilityDate = availability[datestr] || 0;
-        var daily_tasks = year_view[month][day];
-        var total_work_hours = 8;
-        var freeTime = total_work_hours + availabilityDate;
-        if (daily_tasks) {
-            Object.entries(daily_tasks).forEach(([key, task]) => {
-                freeTime -= task.time_taken;
-            });
-        }
-        const hoursForm = document.getElementById('removeAvailabilityForm');
-        hoursForm.reset();
-        hoursForm.dataset.freetime = freeTime;
-        document.getElementById('remove_date').value = datestr;
-        //hour input max should be same as free time
-        // hoursInput.max = freeTime;
-        // pop up the modal
-        document.getElementById('removeAvailabilityModalLabel').textContent = `Remove Availability from ${datestr}:`;
-        document.getElementById('remove_task_list_label').hidden = true;
-        document.getElementById('remove_task_list').innerHTML = "";
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        const hoursForm = document.getElementById('removeAvailabilityForm');
-        const hoursInput = document.getElementById('remove_hours');
-        const taskListSelect = document.getElementById('remove_task_list');
-        hoursInput.addEventListener('input', function() {
-            const hours = parseFloat(this.value);
-            const freeTime = parseFloat(hoursForm.dataset.freetime);
-            const date = document.getElementById('remove_date').value;
-            const selectedDate = new Date(date);
-            const selectedMonth = selectedDate.getMonth() + 1;
-            const selectedDay = selectedDate.getDate();
 
-            taskListSelect.innerHTML = '';
+    const hoursForm = document.getElementById('removeAvailabilityForm');
+    hoursForm.reset();
+    hoursForm.dataset.freetime = freeTime;
+    hoursForm.dataset.cumulative = cumulativeTaskTime;
+    document.getElementById('remove_date').value = datestr;
+    document.getElementById('removeAvailabilityModalLabel').textContent = `Remove Availability from ${datestr}:`;
 
-            const checkedState = {};
-            let selectedHours = 0;
-            Array.from(taskListSelect.querySelectorAll('input[type="checkbox"]')).forEach(checkbox => {
-                checkedState[checkbox.value] = checkbox.checked;
-                if (checkbox.checked) {
-                    selectedHours += parseInt(checkbox.dataset.time_taken);
-                }
-            });
-            freeT = freeTime + selectedHours - hours;
-            // console.log(freeT);
-            // Disable the submit button if there's not enough free time
-            document.getElementById('remove-submit').disabled = (0>=freeT || freeT >8);
-            if (year_view[selectedMonth] && year_view[selectedMonth][selectedDay]) {
-                const dailyTasks = year_view[selectedMonth][selectedDay];
-                var b = false;
-                Object.entries(dailyTasks).forEach(([key, task]) => {
-                    if (!b) {
-                        b = true;
-                        // unset id = "remove_task_list_label" hidden
-                        document.getElementById('remove_task_list_label').hidden = false;
-                    }
-                    const checkboxDiv = document.createElement('div');
-                    checkboxDiv.classList.add('form-check');
+    document.getElementById('cumulative-time-remove').textContent = `Total task time for this day: ${cumulativeTaskTime} hours`;
 
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `remove-task-${task.id}`;
-                    checkbox.name = 'remove_task_list';
-                    checkbox.value = task.id;
-                    checkbox.dataset.time_taken = task.time_taken;
-                    checkbox.classList.add('form-check-input');
+    const hoursInput = document.getElementById('remove_hours');
+    hoursInput.max = availabilityDate;
+}
 
-                    if (checkedState[task.id]) {
-                        checkbox.checked = true;
-                    }
+document.addEventListener('DOMContentLoaded', function() {
+    const addHoursInput = document.getElementById('add_hours');
+    const removeHoursInput = document.getElementById('remove_hours');
+    const addWarning = document.getElementById('add-warning');
+    const removeWarning = document.getElementById('remove-warning');
 
-                    const label = document.createElement('label');
-                    label.htmlFor = `remove-task-${task.id}`;
-                    label.textContent = `${task.name} @ ${task.location} (${task.time_taken} hrs)`;
-                    label.classList.add('form-check-label');
-
-                    checkboxDiv.appendChild(checkbox);
-                    checkboxDiv.appendChild(label);
-                    taskListSelect.appendChild(checkboxDiv);
-                });
-            } else {
-                taskListSelect.innerHTML = '<p>No tasks found for the selected date.</p>';
-            }
-        });
-        taskListSelect.addEventListener('change', function(event) {
-            if (event.target.type !== 'checkbox') return;
-
-            const hours = document.getElementById('remove_hours').value;
-            const freeTime = parseFloat(hoursForm.dataset.freetime);
-            const date = document.getElementById('remove_date').value;
-            const selectedDate = new Date(date);
-            const selectedMonth = selectedDate.getMonth() + 1;
-            const selectedDay = selectedDate.getDate();
-
-            const checkedState = {};
-            let selectedHours = 0;
-            Array.from(taskListSelect.querySelectorAll('input[type="checkbox"]')).forEach(checkbox => {
-                checkedState[checkbox.value] = checkbox.checked;
-                if (checkbox.checked) {
-                    selectedHours += parseInt(checkbox.dataset.time_taken);
-                }
-            });
-            freeT = freeTime + selectedHours - hours;
-            // console.log(freeT);
-            // Disable the submit button if there's not enough free time
-            document.getElementById('remove-submit').disabled = (0>=freeT || freeT >8);
-
-            if (year_view[selectedMonth] && year_view[selectedMonth][selectedDay]) {
-                const dailyTasks = year_view[selectedMonth][selectedDay];
-
-                taskListSelect.innerHTML = '';
-                Object.entries(dailyTasks).forEach(([key, task]) => {
-                    const checkboxDiv = document.createElement('div');
-                    checkboxDiv.classList.add('form-check');
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = `remove-task-${task.id}`;
-                    checkbox.name = 'remove_task_list';
-                    checkbox.value = task.id;
-                    checkbox.dataset.time_taken = task.time_taken;
-                    checkbox.classList.add('form-check-input');
-
-                    if (checkedState[task.id]) {
-                        checkbox.checked = true;
-                    }
-
-                    const label = document.createElement('label');
-                    label.htmlFor = `remove-task-${task.id}`;
-                    label.textContent = `${task.name} @ ${task.location} (${task.time_taken} hrs)`;
-                    label.classList.add('form-check-label');
-
-                    checkboxDiv.appendChild(checkbox);
-                    checkboxDiv.appendChild(label);
-                    taskListSelect.appendChild(checkboxDiv);
-                });
-            } else {
-                taskListSelect.innerHTML = '<p>No tasks found for the selected date.</p>';
-            }
-        });
+    addHoursInput.addEventListener('input', function() {
+        const hours = parseFloat(this.value);
+        if (hours > 0) {
+            addWarning.textContent = "Adding availability may affect tasks scheduled on other days.";
+        } else {
+            addWarning.textContent = "";
+        }
     });
 
+    removeHoursInput.addEventListener('input', function() {
+        const hours = parseFloat(this.value);
+        const freeTime = parseFloat(this.form.dataset.freetime);
+        const cumulativeTime = parseFloat(this.form.dataset.cumulative);
 
+        if (freeTime - hours < cumulativeTime) {
+            removeWarning.textContent = "Warning: Removing this much time will make it impossible to complete all scheduled tasks. Changing this may also affect other tasks scheduled on other days.";
+        } else {
+            removeWarning.textContent = "Removing availability may affect tasks scheduled on other days.";
+        }
+    });
+});
 
     compareObjects = function(o1, o2){
         for(var p in o1){
@@ -444,29 +231,22 @@
     }
 
     function fetchAllYearlyTasks(call, month, year, filter) {
-    fetch('/yearly_tasks/all', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({"year": year, "filter": filter})
-    })
-    .then(response => response.json())
-    .then(data => {
-        year_view = data;
-        lastFetchedYear = year;
-        previousFilter = filter;
-
-        // Fetch scheduled tasks
-        return fetch('/scheduled_tasks/');
-    })
-    .then(response => response.json())
-    .then(scheduledTasks => {
-        year_view.scheduledTasks = scheduledTasks;
-        updateViewWithData(call, month, year);
-    });
-}
+        fetch('/yearly_tasks/all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({"year": year, "filter":filter})
+        })
+        .then(response => response.json())
+        .then(data => {
+            year_view = data;
+            lastFetchedYear = year;
+            previousFilter = filter;
+            updateViewWithData(call, month, year);
+        });
+    }
     function updateViewWithData(call, month, year) {
         const subContainer = document.getElementById('daily_tasks' + call);
         const tableBody = subContainer.querySelector('tbody');
@@ -474,7 +254,7 @@
 
         const daysInMonth = new Date(year, month, 0).getDate();
         let dayOfWeek = new Date(year, month - 1, 1).getDay();
-
+        
         if (call == 1) {
             let row = document.createElement('tr');
             row.style.height = '20vh';
@@ -504,52 +284,54 @@
             }
 
             for (let day = 1; day <= daysInMonth; day++) {
-        let cell = document.createElement('td');
-        cell.textContent = day;
+                let cell = document.createElement('td');
+                cell.textContent = day;
 
-        // Add tasks for this day
-        var daily_tasks = year_view[month][day];
-        var scheduled_tasks = year_view.scheduledTasks[`${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`];
+                // Add tasks for this day
+                var daily_tasks = year_view[month][day]
+                if (daily_tasks) {
+                    var selectedLocation = ""
+                    var selectedMilepost = ""
+                    let taskList = document.createElement('ul');
+                    taskList.style.paddingLeft = '0';
+                    Object.entries(daily_tasks).forEach(([key, task]) => {
+                        // add kocation of task item if location is different from the previous one'
+                        if (selectedLocation!= task.location) {
+                            let drive_dist = Math.abs(task.milepost - selectedMilepost).toFixed(2);
+                            selectedMilepost = task.milepost;
+                            selectedLocation = task.location;
+                            let location = document.createElement('li');
+                            if (taskList.childElementCount == 0) {
+                                location.textContent = `Start at ${task.location}`;}
+                            else {
+                                location.textContent = `Drive to ${task.location} (${drive_dist} Mi.)`;}
+                            location.style.listStyleType = 'none';
+                            location.style.textAlign = 'left';
+                            location.style.fontWeight = 'bold';
+                            taskList.appendChild(location);
+                        }
+                        let taskItem = document.createElement('li');
+                        taskItem.textContent = `${task.name} (${task.time_taken} hrs)`;
+                        taskItem.style.listStyleType = 'none';
+                        taskItem.style.textAlign = 'left';
+                        taskItem.style.cursor = 'pointer';
+                        taskItem.dataset.bsToggle = "modal";
+                        taskItem.dataset.bsTarget = "#moveTaskModal";
+                        taskItem.dataset.warning = task.warning;
+                        // if the task has a warning add a warning icon
+                        if (task.warning) {
+                            taskItem.style.fontWeight = 'bold';
+                            taskItem.style.color = 'red';
+                            taskItem.innerHTML += `<i class="bi bi-exclamation-triangle-fill" data-bs-toggle="tooltip" title="${task.warning}"></i>`;
+                        }
+                        taskItem.onclick = function() {
+                            moveTask(task.id, task.name, `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`, task.warning);
+                        };
 
-        if (daily_tasks || scheduled_tasks) {
-            let taskList = document.createElement('ul');
-            taskList.style.paddingLeft = '0';
-
-            if (daily_tasks) {
-                Object.entries(daily_tasks).forEach(([key, task]) => {
-                    let taskItem = document.createElement('li');
-                    taskItem.textContent = `${task.name} (Due: ${task.time_taken} hrs)`;
-                    taskItem.style.listStyleType = 'none';
-                    taskItem.style.textAlign = 'left';
-                    taskItem.style.cursor = 'pointer';
-                    taskItem.dataset.bsToggle = "modal";
-                    taskItem.dataset.bsTarget = "#moveTaskModal";
-                    taskItem.dataset.warning = task.warning;
-                    if (task.warning) {
-                        taskItem.style.fontWeight = 'bold';
-                        taskItem.style.color = 'red';
-                        taskItem.innerHTML += `<i class="bi bi-exclamation-triangle-fill" data-bs-toggle="tooltip" title="${task.warning}"></i>`;
-                    }
-                    taskItem.onclick = function() {
-                        moveTask(task.id, task.name, `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`, task.warning);
-                    };
-                    taskList.appendChild(taskItem);
-                });
-            }
-
-            if (scheduled_tasks) {
-                scheduled_tasks.forEach(task => {
-                    let taskItem = document.createElement('li');
-                    taskItem.textContent = `${task} (Scheduled)`;
-                    taskItem.style.listStyleType = 'none';
-                    taskItem.style.textAlign = 'left';
-                    taskItem.style.color = 'green';
-                    taskList.appendChild(taskItem);
-                });
-            }
-
-            cell.appendChild(taskList);
-        }
+                        taskList.appendChild(taskItem);
+                    });
+                    cell.appendChild(taskList);
+                }
 
                 if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) {
                     cell.classList.add('bg-primary');
@@ -664,36 +446,33 @@
                 today.setUTCHours(0, 0, 0, 0);
                 dateString = date.toISOString().split('T')[0];
                 // if we're not in the past
-                if (date >= today) {
-    workshiftContainer.className = 'workshift-container';
+                if (date>=today) {
+                    workshiftContainer.className = 'workshift-container';
 
-    workshiftContainer.innerHTML = `
-        ${dayOfWeek !== 0 && dayOfWeek !== 6 ? `
-        <p>Workshift Length: 8 hrs</p>
-        <p>Add or Remove Free Time</p>
-        <div class="availability-controls">
-            <div class="hour-adjustments d-flex justify-center">
-                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal" id="plus${dateString}" onclick="addAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours >= 8 ? 'disabled' : ''}>+</button>
-                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#removeAvailabilityModal" id="minus${dateString}" onclick="removeAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours <= 0 ? 'disabled' : ''}>-</button>
-            </div>
-        </div>
-        <div id="availability-bars-${dateString}">
-            <p>Free Time for Testing Remaining: ${total_work_hours} hrs</p>
-            <div class="availability-bars">
-                ${Array(total_work_hours).fill('<div class="bar orange"></div>').join('')}
-                ${Array(8-total_work_hours).fill('<div class="bar grey"></div>').join('')}
-            </div>
-            ${total_work_hours < 4 ? '<p class="text-danger"><strong>Warning: Low availability!</strong></p>' : ''}
-        </div>` : ''}
-    `;
-}
+                    workshiftContainer.innerHTML = `
+                        ${dayOfWeek !== 0 && dayOfWeek !== 6 ? `
+                        <p>Workshift Length: 8 hrs</p>
+                        <p>Add or Remove Free Time</p>
+                        <div class="availability-controls">
+                            <div class="hour-adjustments d-flex justify-center">
+                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal" id="plus${dateString}" onclick="addAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours >= 8 ? 'disabled' : ''}>+</button>
+                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#removeAvailabilityModal" id="minus${dateString}" onclick="removeAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours <= 0 ? 'disabled' : ''}>-</button>                            </div>
+                        </div>
+                        <div id="availability-bars-${dateString}">
+                            <p>Free Time for Testing Remaining: ${total_work_hours} hrs</p>
+                            <div class="availability-bars">
+                                ${Array(total_work_hours).fill('<div class="bar orange"></div>').join('')}
+                                ${Array(8-total_work_hours).fill('<div class="bar grey"></div>').join('')}
+                            </div>
+                        </div>` : ''}
+                    `;}
 
-taskList.appendChild(workshiftContainer);
-cell.appendChild(taskList);
+                    taskList.appendChild(workshiftContainer);
+                    cell.appendChild(taskList);
 
-if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) {
-    cell.classList.add('bg-primary');
-}
+                if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) {
+                    cell.classList.add('bg-primary');
+                }
 
                 row.appendChild(cell);
 
@@ -752,7 +531,7 @@ if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) 
             }
             const monthDropdown = document.getElementById('month_dropdown1');
             const selectedMonthInput =  monthDropdown.querySelector('.btn-check:checked');
-            const month = selectedMonthInput ? parseInt(selectedMonthInput.getAttribute('data-month')) : {{today.month}};            
+            const month = selectedMonthInput ? parseInt(selectedMonthInput.getAttribute('data-month')) : {{today.month}};
             updateDailyView(1, month, selectedYear);
         });
     });

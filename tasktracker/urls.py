@@ -23,7 +23,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('', views.index, name='home'),
-    path('sample/<int:sample>/', views.index, name='home_sample'),
+    path('&sample=<int:sample>/', views.index, name='home'),
     path('signup/', views.signup_view, name='signup'),
     path('yearly_tasks/', views.yearly_tasks, name='yearly_tasks'),
     path('yearly_tasks/all', views.all_yearly_tasks, name='all_yearly_tasks'),
@@ -31,6 +31,7 @@ urlpatterns = [
     path('availability/remove', views.remove_availability, name='remove_availability'),
     path('task_list_week/', views.task_list_week, name='task_list_week'),
     path("move_task", views.move_task, name='move_task'),
-path('scheduled_tasks/', views.scheduled_tasks, name='scheduled_tasks'),
+    path('optimizer/', views.optimizer, name='new_endpoint'),
+    path('user_info/', views.user_info, name='user_info'),
 
 ]

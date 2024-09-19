@@ -318,19 +318,10 @@ a:hover {
 .filterDropdown{
   width:max-content;
 }
-.highlight-scheduled-date {
-  background-color: #ffff99; /* Light yellow background */
-  font-weight: bold;
-}
 
-.due-task {
-    color: #393939;
-    font-weight: bold;
-    margin-right: 5px;
-}
-
-.scheduled-task {
-    color: rgba(2, 53, 58, 0.91);
-    font-weight: bold;
-    margin-left: 5px;
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    margin-top: 10px;
 }

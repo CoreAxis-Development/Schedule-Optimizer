@@ -3,12 +3,17 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from datetime import date, datetime, timedelta
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-import json
 from .models import Location, Task
+import json
+from datetime import date, timedelta
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.contrib.auth.models import User
+import logging
+import requests
 
-
+logger = logging.getLogger(__name__)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("/")
@@ -50,45 +55,139 @@ def index(request):
     today = date.today()
     formatted_date = today.strftime("Today: %A, %B %d, %Y")
     due_next = {}
-    scheduled_tasks = {}
 
     if request.method == "POST":
         sample = json.loads(request.body).get("sample", 7)
     else:
-        sample = int(request.GET.get("sample", 7))
+        sample = request.GET.get("sample", 7)
 
-    dates = [today + timedelta(days=i) for i in range(sample)]
-    dates_str = [day.strftime('%Y-%m-%d') for day in dates]
+    # Use the optimizer to get scheduled tasks
+    optimizer_data = {
+        'user_id': request.user.id,
+        'buffer_days': sample
+    }
+    optimizer_response = requests.post('http://localhost:8000/optimizer/', json=optimizer_data)
+    scheduled_tasks = optimizer_response.json().get('scheduled_tasks', [])
+
+    # Create a mapping of task names to their scheduled dates and due dates
+    task_schedule = {(task['task_name'], task['location']):
+                     {'scheduled_date': task['scheduled_date'],
+                      'due_date': task['due_date']}
+                     for task in scheduled_tasks}
 
     for location in request.user.locations.all():
-        due_next[str(location)] = location.due_next(sample)
-        scheduled_tasks[str(location)] = {}  # Initialize for each location
-
-        # Get scheduled tasks for this location
-        location_tasks = location.tasks.filter(scheduled_date__gte=today,
-                                               scheduled_date__lt=today + timedelta(days=sample))
+        location_tasks = Task.objects.filter(user=request.user, location=location)
+        due_next[str(location)] = {}
         for task in location_tasks:
-            date_str = task.scheduled_date.strftime('%Y-%m-%d')
-            if date_str not in scheduled_tasks[str(location)]:
-                scheduled_tasks[str(location)][date_str] = []
-            scheduled_tasks[str(location)][date_str].append(task.name)
+            task_info = task_schedule.get((task.name, str(location)))
+            if task_info:
+                scheduled_date = task_info['scheduled_date']
+                if scheduled_date not in due_next[str(location)]:
+                    due_next[str(location)][scheduled_date] = []
+                due_next[str(location)][scheduled_date].append({
+                    'name': task.name,
+                    'scheduled_date': scheduled_date,
+                    'due_date': task_info['due_date']
+                })
 
     context = {
         "today_date": formatted_date,
         "sample": sample,
         "today": today,
-        "dates": dates,
-        "dates_str": dates_str,
+        "dates": (dates:=[today + timedelta(_) for _ in range(0, sample)]),
+        "dates_str": [day.strftime('%Y-%m-%d') for day in dates],
         "due_next": due_next,
-        "scheduled_tasks": scheduled_tasks,
-        "next_decade": [today.year + i for i in range(10)],
-        "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-                   "November", "December"],
-        "weekdays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        "next_decade": [today.year+i for i in range(10)],
+        "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        "weekdays":["Sunday","Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     }
     if request.method == "POST":
-        return JsonResponse({"text": render(request, "test_dates.html", context).content.decode()})
+        return JsonResponse({"text":render(request, "test_dates.html", context).content.decode()})
     return render(request, "base.html", context)
+
+def all_yearly_tasks(request):
+    data = json.loads(request.body)
+    year = data.get("year")
+    filt = data.get("filter", {})
+    year_view = {month: {"days_in_month": 31 if month in [1, 3, 5, 7, 8, 10, 12] else 30 if month in [4, 6, 9, 11] else 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28} for month in range(1, 13)}
+    year_view.update({"year":year, "unique_locations":[], "unique_tasks":{}})
+    
+    # Use the optimizer to get scheduled tasks for the entire year
+    optimizer_data = {
+        'user_id': request.user.id,
+        'buffer_days': 365
+    }
+    optimizer_response = requests.post('http://localhost:8000/optimizer/', json=optimizer_data)
+    scheduled_tasks = optimizer_response.json().get('scheduled_tasks', [])
+
+    tasks = request.user.tasks.all()
+    if filt:
+        tasks = tasks.filter(**filt)
+    unique_locations = list(set(task.location.name for task in tasks))
+    unique_tasks = list(set(task.name for task in tasks))
+    year_view["unique_locations"] = unique_locations
+    year_view["unique_tasks"] = unique_tasks
+
+    # Create a mapping of task names and locations to their database objects
+    task_objects = {(task.name, task.location.name): task for task in tasks}
+
+    for task in scheduled_tasks:
+        task_date = datetime.strptime(task['scheduled_date'], "%Y-%m-%d").date()
+        if task_date.year == year:
+            month = task_date.month
+            day = task_date.day
+            db_task = task_objects.get((task['task_name'], task['location']))
+            if db_task:
+                task_info = {
+                    "name": task['task_name'],
+                    "location": task['location'],
+                    "time_taken": task['hours'],
+                    "due_date": task['scheduled_date'],  # Use scheduled_date as due_date
+                    "milepost": db_task.location.milepost
+                }
+                if day not in year_view[month]:
+                    year_view[month][day] = {1: task_info}
+                else:
+                    daily_tasks = year_view[month][day]
+                    day_arr = list(daily_tasks.values()) + [task_info]
+                    day_arr.sort(key=lambda x: x["milepost"])
+                    year_view[month][day] = {_+1: daym for _, daym in enumerate(day_arr)}
+
+    return JsonResponse(year_view)
+
+def task_list_week(request):
+    date_str = request.GET.get('date')
+    date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    start_of_week = date_obj - timedelta(days=date_obj.weekday()+1)
+    end_of_week = start_of_week + timedelta(days=6)
+
+    # Use the optimizer to get scheduled tasks for the week
+    optimizer_data = {
+        'user_id': request.user.id,
+        'buffer_days': 7
+    }
+    optimizer_response = requests.post('http://localhost:8000/optimizer/', json=optimizer_data)
+    scheduled_tasks = optimizer_response.json().get('scheduled_tasks', [])
+
+    # Create a mapping of task names and locations to their database objects
+    tasks = Task.objects.filter(user=request.user)
+    task_objects = {(task.name, task.location.name): task for task in tasks}
+
+    task_list = []
+    for task in scheduled_tasks:
+        scheduled_date = datetime.strptime(task['scheduled_date'], "%Y-%m-%d").date()
+        if start_of_week <= scheduled_date <= end_of_week:
+            db_task = task_objects.get((task['task_name'], task['location']))
+            if db_task:
+                task_list.append({
+                    'name': task['task_name'],
+                    'time_taken': task['hours'],
+                    "location": task['location'],
+                    "due_date": task['scheduled_date'],  # Use scheduled_date as due_date
+                    "id": db_task.id,
+                })
+
+    return JsonResponse(task_list, safe=False)
 @require_POST
 def yearly_tasks(request):
     # Yearly tasks per location for page 1
@@ -98,8 +197,7 @@ def yearly_tasks(request):
     location = Location.objects.get(name=location_id)
     tasks = location.this_year_tasks(year)
 
-    return JsonResponse({'tasks': tasks, "length": len(tasks)})
-
+    return JsonResponse({'tasks': tasks, "length":len(tasks)})
 
 def get_next_available_day(request, year_view: dict, year: int, month: int, day: int):
     # also page 1
@@ -114,83 +212,8 @@ def get_next_available_day(request, year_view: dict, year: int, month: int, day:
         # Check if the current day is not Saturday (5) or Sunday (6)
         availability = user.availability.get(f"{year}-{month:02d}-{day:02d}", 0)
         current_date = date(year, month, day)
-        if current_date.weekday() < 5 and sum(
-                task['time_taken'] for task in year_view[month].get(day, {}).values()) < 8 + availability:
+        if current_date.weekday() < 5 and sum(task['time_taken'] for task in year_view[month].get(day, {}).values()) < 8 + availability:
             return month, day
-
-
-def task_list_week(request):
-    # for remove_availability
-    date_str = request.GET.get('date')
-    # Convert the date string to a date object
-    date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-    # Calculate the start and end dates of the week containing that date
-    start_of_week = date_obj - timedelta(days=date_obj.weekday() + 1)
-    end_of_week = start_of_week + timedelta(days=6)
-
-    tasks = request.user.tasks.filter(buffered_date__gt=date_obj).filter(buffered_date__lte=end_of_week)
-    [task.next_occurrence() for task in tasks]
-    task_list = [{'name': task.name,
-                  'time_taken': task.completion_hrs,
-                  "location": task.location.name,
-                  "due_date": task.buffered_date.strftime('%Y-%m-%d'),
-                  "id": task.id,
-                  } for task in tasks]
-    return JsonResponse(task_list, safe=False)
-
-
-def all_yearly_tasks(request):
-    data = json.loads(request.body)
-    year = data.get("year")
-    filt = data.get("filter", {})
-    year_view = {month: {"days_in_month": 31 if month in [1, 3, 5, 7, 8, 10, 12] else 30 if month in [4, 6, 9,
-                                                                                                      11] else 29 if year % 4 == 0 and (
-                year % 100 != 0 or year % 400 == 0) else 28} for month in range(1, 13)}
-    year_view.update({"year": year, "unique_locations": [], "unique_tasks": {}})
-    tasks = request.user.tasks.all()
-    if filt:
-        tasks = tasks.filter(**filt)
-    unique_locations = list(set(task.location.name for task in tasks))
-    unique_tasks = list(set(task.name for task in tasks))
-    year_view["unique_locations"] = unique_locations
-    year_view["unique_tasks"] = unique_tasks
-
-    for task in tasks:
-        task_occurrences = task.all_task_occurences(year)
-        for month in task_occurrences:
-            days = task_occurrences[month]
-            for i, day_str in enumerate(days):
-                buffered_date = datetime.strptime(day_str, "%Y-%m-%d").date()
-                buffered_month = buffered_date.month
-                buffered_day = buffered_date.day
-
-                date_str = f"{year}-{buffered_month:02d}-{buffered_day:02d}"
-                user_availability = request.user.user_profile.availability.get(date_str, 0)
-                current_hours = sum(t['time_taken'] for t in year_view[buffered_month].get(buffered_day, {}).values())
-
-                # Clip availability to ensure total hours don't exceed 0<=total<=8
-                max_available_hours = 8 - current_hours
-                clipped_availability = max(0, min(user_availability, max_available_hours))
-                # update user availability
-                request.user.user_profile.availability[date_str] = clipped_availability
-                request.user.user_profile.save()
-
-                if current_hours + task.completion_hrs > 8:
-                    # Find the next available day
-                    buffered_month, buffered_day = get_next_available_day(request, year_view, year, buffered_month,
-                                                                          buffered_day)
-                    if not (buffered_month and buffered_day):
-                        break
-
-                if buffered_day not in year_view[buffered_month]:
-                    year_view[buffered_month][buffered_day] = {1: task.json()}
-                else:
-                    daily_tasks = year_view[buffered_month][buffered_day]
-                    day_arr = list(daily_tasks.values()) + [task.json()]
-                    day_arr.sort(key=lambda x: x["milepost"])
-                    year_view[buffered_month][buffered_day] = {_ + 1: daym for _, daym in enumerate(day_arr)}
-    return JsonResponse(year_view)
-
 
 @require_POST
 def add_availability(request):
@@ -215,7 +238,6 @@ def add_availability(request):
         return redirect('home')
     return JsonResponse({'status': 'error'}, status=400)
 
-
 @require_POST
 def remove_availability(request):
     if request.method == 'POST':
@@ -233,9 +255,8 @@ def remove_availability(request):
         # Construct year_view on the fly
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
         year = date_obj.year
-        year_view = {month: {"days_in_month": 31 if month in [1, 3, 5, 7, 8, 10, 12] else 30 if month in [4, 6, 9,
-                                                                                                          11] else 29 if year % 4 == 0 and (
-                    year % 100 != 0 or year % 400 == 0) else 28} for month in range(1, 13)}
+        year_view = {month: {"days_in_month": 31 if month in [1, 3, 5, 7, 8, 10, 12] else 30 if month in [4, 6, 9, 11] else 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28} for month in range(1, 13)}
+        
 
         # Populate year_view with tasks
         for task in request.user.tasks.filter(buffered_date__year=year):
@@ -248,7 +269,7 @@ def remove_availability(request):
                 daily_tasks = year_view[month][day]
                 day_arr = list(daily_tasks.values()) + [task.json()]
                 day_arr.sort(key=lambda x: x["location"])
-                year_view[month][day] = {_ + 1: daym for _, daym in enumerate(day_arr)}
+                year_view[month][day] = {_+1: daym for _, daym in enumerate(day_arr)}
 
         # Move tasks to the next available day
         for task_id in task_list:
@@ -263,7 +284,6 @@ def remove_availability(request):
 
         return redirect('home')
     return JsonResponse({'status': 'error'}, status=400)
-
 
 @require_POST
 def move_task(request):
@@ -292,41 +312,137 @@ def move_task(request):
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
-
-@login_required
-def scheduled_tasks(request):
-    tasks = request.user.tasks.all()
-    scheduled_tasks = {}
-
-    for task in tasks:
-        if task.scheduled_date:
-            date_str = task.scheduled_date.strftime('%Y-%m-%d')
-            if date_str not in scheduled_tasks:
-                scheduled_tasks[date_str] = []
-            scheduled_tasks[date_str].append(task.name)
-
-    return JsonResponse(scheduled_tasks)
-
+@csrf_exempt
 @require_POST
-def change_due_date(request):
-    data = json.loads(request.body)
-    task_id = data.get('task_id')
-    new_due_date = data.get('new_due_date')
-    buffer_days = int(data.get('buffer_days'))
-
+def optimizer(request):
     try:
-        task = Task.objects.get(id=task_id, user=request.user)
-        new_due_date_obj = datetime.strptime(new_due_date, '%Y-%m-%d').date()
-        buffered_date = new_due_date_obj - timedelta(days=buffer_days)
+        data = json.loads(request.body)
+        user_id = data.get('user_id')
+        buffer_days = data.get('buffer_days', 7)  # Default to 7 if not provided
 
-        task.due_date = new_due_date_obj
-        task.buffered_date = buffered_date
-        task.save()
+        if not user_id:
+            return JsonResponse({'error': 'User ID is required'}, status=400)
 
-        return JsonResponse({'status': 'success'})
-    except Task.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Task not found'}, status=404)
-    except ValueError:
-        return JsonResponse({'status': 'error', 'message': 'Invalid date format'}, status=400)
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+
+        user_profile = user.user_profile
+        availability = user_profile.availability
+
+        tasks = list(user.tasks.all().order_by('due_date'))
+        locations = user.locations.all()
+
+        scheduled_tasks = []
+        updated_availability = availability.copy()
+
+        def is_weekend(day):
+            return day.weekday() >= 5
+
+        def get_available_hours(date):
+            date_str = date.strftime('%Y-%m-%d')
+            return updated_availability.get(date_str, 8)  # Default to 8 if not specified
+
+        def find_next_available_weekday(start_date):
+            next_date = start_date
+            while is_weekend(next_date):
+                next_date += timedelta(days=1)
+            return next_date
+
+        def schedule_task(task, schedule_date):
+            date_str = schedule_date.strftime('%Y-%m-%d')
+            available_hours = get_available_hours(schedule_date)
+
+            if available_hours >= task.completion_hrs:
+                updated_availability[date_str] = available_hours - task.completion_hrs
+                scheduled_tasks.append({
+                    'task_name': task.name,
+                    'scheduled_date': date_str,
+                    'location': task.location.name,
+                    'due_date': task.due_date.strftime('%Y-%m-%d'),
+                    'hours': task.completion_hrs
+                })
+                return True
+            return False
+
+        today = date.today()
+
+        for task in tasks:
+            schedule_date = max(today, task.due_date - timedelta(days=buffer_days))
+            schedule_date = find_next_available_weekday(schedule_date)
+
+            while schedule_date <= task.due_date:
+                if schedule_task(task, schedule_date):
+                    break
+                schedule_date = find_next_available_weekday(schedule_date + timedelta(days=1))
+
+            # If we couldn't schedule before or on the due date, schedule on the due date anyway
+            if schedule_date > task.due_date:
+                schedule_task(task, task.due_date)
+
+        # Sort scheduled tasks by scheduled_date
+        scheduled_tasks.sort(key=lambda x: x['scheduled_date'])
+
+        return JsonResponse({
+            'scheduled_tasks': scheduled_tasks,
+            'updated_availability': updated_availability
+        })
     except json.JSONDecodeError:
-        return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return JsonResponse({'error': 'Server error'}, status=500)
+@csrf_exempt
+def user_info(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+
+            if not user_id:
+                return JsonResponse({'error': 'User ID is required'}, status=400)
+
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'error': 'User not found'}, status=404)
+
+            user_profile = user.user_profile
+            tasks = user.tasks.all()
+            locations = user.locations.all()
+
+            user_info = {
+                'username': user.username,
+                'email': user.email,
+                'profile': {
+                    'availability': user_profile.availability,
+                    'safety_buffer_days': user_profile.safety_buffer_days,
+                    'show_tooltip': user_profile.show_tooltip,
+                },
+                'tasks': [
+                    {
+                        'name': task.name,
+                        'frequency': task.frequency,
+                        'completion_hrs': task.completion_hrs,
+                        'due_date': task.due_date.strftime('%Y-%m-%d'),
+                        'buffered_date': task.buffered_date.strftime('%Y-%m-%d') if task.buffered_date else None,
+                        'location': task.location.name,
+                    } for task in tasks
+                ],
+                'locations': [
+                    {
+                        'name': location.name,
+                        'milepost': location.milepost,
+                    } for location in locations
+                ]
+            }
+
+            return JsonResponse(user_info)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)

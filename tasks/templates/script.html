@@ -1,4 +1,3 @@
-
 <script>
     // Test Dates
     function updateSelectedView(sample = 7) {
@@ -254,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const daysInMonth = new Date(year, month, 0).getDate();
         let dayOfWeek = new Date(year, month - 1, 1).getDay();
-        
+
         if (call == 1) {
             let row = document.createElement('tr');
             row.style.height = '20vh';
@@ -536,19 +535,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     // move task functionality
-    function moveTask(taskId, taskName, currentDate, warning) {
+    function moveTask(taskId, taskName, currentDate, warning, scheduledDate, dueDate) {
         const moveTaskForm = document.getElementById('moveTaskForm');
         const taskNameLabel = document.getElementById('task_name');
         const taskIdInput = document.getElementById('task_id_input');
         const newDateInput = document.getElementById('new_date');
         const moveToDateLabel = document.getElementById('move_to_date');
-
+        const scheduledDateLabel = document.getElementById('scheduled_date');
+        const dueDateLabel = document.getElementById('due_date');
+    
         taskNameLabel.textContent = `Move task: ${taskName}`;
         taskIdInput.value = taskId;
-        newDateInput.value = new Date(currentDate);
+        newDateInput.value = new Date(currentDate).toISOString().split('T')[0];
         // make sure newDateInput never allows past dates
         newDateInput.min = new Date().toISOString().split('T')[0];
-        moveToDateLabel.textContent = `Current date: ${currentDate}. Move to:`;
+        moveToDateLabel.textContent = `Current scheduled date: ${currentDate}. Move to:`;
+        scheduledDateLabel.textContent = scheduledDate;
+        dueDateLabel.textContent = dueDate;
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -614,5 +617,23 @@ function updateBufferPeriod(buffer) {
     const bufferDropdown = document.getElementById('buffer_dropdown1');
     bufferDropdown.innerHTML = `<i class="bi bi-clock pe-1"></i>Buffer: ${buffer}`;
     // Add any additional logic needed to handle the buffer period change
+}
+
+function openMoveTaskModal(taskId, taskName, scheduledDate, dueDate) {
+    // Set the task name
+    document.getElementById('task_name').innerText = taskName;
+
+    // Set the task ID
+    document.getElementById('task_id_input').value = taskId;
+
+    // Set the scheduled date
+    document.getElementById('scheduled_date').innerText = scheduledDate;
+
+    // Set the due date
+    document.getElementById('due_date').innerText = dueDate;
+
+    // Show the modal
+    var moveTaskModal = new bootstrap.Modal(document.getElementById('moveTaskModal'));
+    moveTaskModal.show();
 }
 </script>

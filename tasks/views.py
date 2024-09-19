@@ -102,12 +102,13 @@ def index(request):
 def all_yearly_tasks(request):
     data = json.loads(request.body)
     year = data.get("year")
+    buffer_days = data.get("buffer", 7)
     filt = data.get("filter", {})
     year_view = {month: {"days_in_month": 31 if month in [1, 3, 5, 7, 8, 10, 12] else 30 if month in [4, 6, 9, 11] else 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28} for month in range(1, 13)}
     year_view.update({"year":year, "unique_locations":[], "unique_tasks":{}})
 
     # Use the optimizer function directly
-    optimizer_result = optimizer(request.user.id, 365)
+    optimizer_result = optimizer(request.user.id, buffer_days)
     scheduled_tasks = optimizer_result['scheduled_tasks']
 
     tasks = request.user.tasks.all()
@@ -321,3 +322,24 @@ def fetch_all_yearly_tasks(request):
                     year_view[month][day].append(task.json())
 
         return JsonResponse(year_view)
+
+
+def get_yearly_tasks(request, year):
+    buffer = request.POST.get('buffer', 0)
+    tasks = Task.objects.filter(user=request.user)
+    year_view = {}
+
+    for task in tasks:
+        task.user.user_profile.safety_buffer_days = buffer
+        task.save()
+        occurrences = task.all_task_occurences(year)
+
+        for month, days in occurrences.items():
+            if month not in year_view:
+                year_view[month] = {}
+            for day in days:
+                if day not in year_view[month]:
+                    year_view[month][day] = []
+                year_view[month][day].append(task.json())
+
+    return JsonResponse(year_view)

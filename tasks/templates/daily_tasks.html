@@ -89,8 +89,6 @@
         </table>
     </div>
 </div>
-
-
 <div class="modal fade" id="moveTaskModal" tabindex="-1" aria-labelledby="moveTaskModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -99,15 +97,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" id="closeMoveModal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="moveTaskForm" method="post" action="{% url 'move_task' %}">
+               <form id="moveTaskForm" method="post" action="{% url 'move_task' %}">
                     {% csrf_token %}
                     <label id="task_name" class="form-label"></label>
                     <input type="number" class="form-control" name="task_id" readonly hidden id="task_id_input">
                     <div>
+                        <label id="scheduled_deadline_dates" class="form-label"></label>
+                    </div>
+                    <div>
                         <label for="new_date" id="move_to_date" class="form-label">Move Deadline to Date:</label>
                         <input type="date" class="form-control" id="new_date" name="new_date" required>
                         <div class="alert alert-warning mt-2" role="alert">
-                            Warning: You are moving the deadline of this task. This has the ability to affect all scheduled. Postponing the deadline may result in negative consequences.
+                            Warning: You are moving the deadline of this task. This has the ability to affect all scheduled tasks. Postponing the deadline may result in negative consequences.
                         </div>
                     </div>
                     <button type="submit" id="move-submit" class="btn btn-primary mt-3">Move Deadline Date of Task</button>
@@ -116,4 +117,3 @@
         </div>
     </div>
 </div>
-

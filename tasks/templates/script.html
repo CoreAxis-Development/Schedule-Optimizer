@@ -500,42 +500,76 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         };}
     }
-    let selectedYear = {{today.year}};
 
-    // Month change functionality on Page 3
-    document.addEventListener('DOMContentLoaded', function() {
-        const yearDropdown = document.getElementById('year_dropdown2');
+   let selectedYear = {{today.year}};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const yearDropdown = document.getElementById('year_dropdown2');
+    const bufferDropdown = document.getElementById('buffer_dropdown1');
+    const buffer = 7; // Default buffer value
+    const selectedMonth = {{today.month}};
+
+    // Initial call to updateDailyView with buffer value
+    updateDailyView(2, selectedMonth, selectedYear, true, { buffer });
+
+    // Also update the tasks view
+    updateDailyView(1, selectedMonth, selectedYear, true, { buffer });
+
+    if (yearDropdown) {
         const dropdownMenu = yearDropdown.nextElementSibling;
-        updateDailyView(2, {{today.month}}, selectedYear);
+        if (dropdownMenu) {
+            dropdownMenu.addEventListener('click', function(event) {
+                if (event.target.tagName === 'A') {
+                    selectedYear = parseInt(event.target.textContent);
+                    yearDropdown.innerHTML = `<i class="bi bi-list-ul pe-1"></i>${selectedYear}`;
+                    const monthDropdown = document.getElementById('month_dropdown2');
+                    const selectedMonthInput = monthDropdown.querySelector('.btn-check:checked');
+                    const month = selectedMonthInput ? parseInt(selectedMonthInput.getAttribute('data-month')) : selectedMonth;
+                    updateDailyView(2, month, selectedYear, true, { buffer });
+                    updateDailyView(1, month, selectedYear, true, { buffer });
+                }
+            });
+        }
+    }
 
-        dropdownMenu.addEventListener('click', function(event) {
+    if (bufferDropdown) {
+        bufferDropdown.addEventListener('click', function(event) {
             if (event.target.tagName === 'A') {
-                selectedYear = parseInt(event.target.textContent);
-                yearDropdown.innerHTML = `<i class="bi bi-list-ul pe-1"></i>${selectedYear}`;
+                const newBuffer = parseInt(event.target.textContent);
+                updateBufferPeriod(newBuffer);
             }
-            const monthDropdown = document.getElementById('month_dropdown2');
-            const selectedMonthInput = monthDropdown.querySelector('.btn-check:checked');
-            const month = selectedMonthInput ? parseInt(selectedMonthInput.getAttribute('data-month')) : {{today.month}};
-            updateDailyView(2, month, selectedYear);
         });
-    });
-    // Month Change functionality on Page 2
-    document.addEventListener('DOMContentLoaded', function() {
-        const yearDropdown = document.getElementById('year_dropdown1');
-        const dropdownMenu = yearDropdown.nextElementSibling;
+    }
+
+    // Ensure the initial buffer is set correctly
+    updateBufferPeriod(buffer);
+});
+
+function updateBufferPeriod(buffer) {
+    const bufferDropdown = document.getElementById('buffer_dropdown1');
+    if (bufferDropdown) {
+        bufferDropdown.innerHTML = `<i class="bi bi-clock pe-1"></i>Buffer: ${buffer}`;
+    }
+
+    // Fetch the updated tasks with the new buffer period
+    fetch('/yearly_tasks/all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({"year": selectedYear, "buffer": buffer})
+    })
+    .then(response => response.json())
+    .then(data => {
+        year_view = data;
         updateDailyView(1, {{today.month}}, selectedYear);
-
-        dropdownMenu.addEventListener('click', function(event) {
-            if (event.target.tagName === 'A') {
-                selectedYear = parseInt(event.target.textContent);
-                yearDropdown.innerHTML = `<i class="bi bi-list-ul pe-1"></i>${selectedYear}`;
-            }
-            const monthDropdown = document.getElementById('month_dropdown1');
-            const selectedMonthInput =  monthDropdown.querySelector('.btn-check:checked');
-            const month = selectedMonthInput ? parseInt(selectedMonthInput.getAttribute('data-month')) : {{today.month}};
-            updateDailyView(1, month, selectedYear);
-        });
+        updateDailyView(2, {{today.month}}, selectedYear);
+    })
+    .catch(error => {
+        console.error('Error:', error);
     });
+}
 
     function moveTask(taskId, taskName, currentDate, deadlineDate, warning) {
         const moveTaskForm = document.getElementById('moveTaskForm');
@@ -640,10 +674,4 @@ document.addEventListener('DOMContentLoaded', function() {
         updateDailyView(1, {{today.month}}, {{today.year}}, true, filters);
     });
 
-    // Add this function to your script
-function updateBufferPeriod(buffer) {
-    const bufferDropdown = document.getElementById('buffer_dropdown1');
-    bufferDropdown.innerHTML = `<i class="bi bi-clock pe-1"></i>Buffer: ${buffer}`;
-    // Add any additional logic needed to handle the buffer period change
-}
 </script>

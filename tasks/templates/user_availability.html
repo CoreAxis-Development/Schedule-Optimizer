@@ -23,17 +23,6 @@
             {% endfor %}
         </div>
         <div class="buttons" role="group" aria-label="Task actions">
-            <div class="dropdown d-inline-block me-1vw">
-                <button type="button" id="buffer_dropdown1" class="btn btn-light btn-sm border-dark square-heading dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-clock pe-1"></i>Buffer: 7
-                </button>
-                <ul class="dropdown-menu">
-                    {% for i in '0123456789'|make_list %}
-                        <li><a class="dropdown-item" href="#" onclick="updateBufferPeriod({{ i }})">{{ i }}</a></li>
-                    {% endfor %}
-                    <li><a class="dropdown-item" href="#" onclick="updateBufferPeriod(10)">10</a></li>
-                </ul>
-            </div>
             <button type="button" width="2.3vw" height="2.3vw" class="btn btn-light btn-sm border-dark square-heading me-1vw">
                 <i class="bi bi-pencil-square"></i>
             </button>
@@ -59,4 +48,3 @@
         </table>
     </div>
 </div>
-

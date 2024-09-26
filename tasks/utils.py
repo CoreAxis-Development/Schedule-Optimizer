@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 from django.contrib.auth.models import User
 
+
 def optimizer(user_id, buffer_days=7):
     try:
         user = User.objects.get(id=user_id)
@@ -10,7 +11,10 @@ def optimizer(user_id, buffer_days=7):
     user_profile = user.user_profile
     availability = user_profile.availability
 
-    tasks = list(user.tasks.all().order_by('due_date'))
+    today = date.today()
+
+    # Fetch tasks, excluding those with due dates before today
+    tasks = list(user.tasks.filter(due_date__gte=today).order_by('due_date'))
     scheduled_tasks = []
     updated_availability = availability.copy()
 
@@ -34,6 +38,7 @@ def optimizer(user_id, buffer_days=7):
         if available_hours >= task.completion_hrs:
             updated_availability[date_str] = available_hours - task.completion_hrs
             scheduled_tasks.append({
+                'task_id': task.id,
                 'task_name': task.name,
                 'scheduled_date': date_str,
                 'location': task.location.name,
@@ -43,24 +48,42 @@ def optimizer(user_id, buffer_days=7):
             return True
         return False
 
-    today = date.today()
-
     for task in tasks:
-        target_date = task.due_date - timedelta(days=buffer_days)
-        schedule_date = max(today, target_date)
-        schedule_date = find_next_available_weekday(schedule_date)
+        earliest_start = max(today, task.due_date - timedelta(days=buffer_days))
+        latest_start = task.due_date
 
-        while schedule_date <= task.due_date:
-            if schedule_task(task, schedule_date):
+        current_date = find_next_available_weekday(earliest_start)
+        scheduled = False
+
+        while current_date <= latest_start:
+            if schedule_task(task, current_date):
+                scheduled = True
                 break
-            schedule_date = find_next_available_weekday(schedule_date + timedelta(days=1))
+            current_date = find_next_available_weekday(current_date + timedelta(days=1))
 
-        if schedule_date > task.due_date:
-            schedule_task(task, task.due_date)
+        if not scheduled:
+            # If we couldn't schedule within the preferred window, try to find the earliest possible date
+            current_date = find_next_available_weekday(earliest_start)
+            while True:
+                if schedule_task(task, current_date):
+                    break
+                current_date = find_next_available_weekday(current_date + timedelta(days=1))
 
+    # Sort scheduled tasks by scheduled date
     scheduled_tasks.sort(key=lambda x: x['scheduled_date'])
+
+    # Calculate and include statistics
+    total_tasks = len(tasks)
+    scheduled_count = len(scheduled_tasks)
+    unscheduled_count = total_tasks - scheduled_count
 
     return {
         'scheduled_tasks': scheduled_tasks,
-        'updated_availability': updated_availability
+        'updated_availability': updated_availability,
+        'stats': {
+            'total_tasks': total_tasks,
+            'scheduled_tasks': scheduled_count,
+            'unscheduled_tasks': unscheduled_count,
+            'scheduling_success_rate': (scheduled_count / total_tasks) * 100 if total_tasks > 0 else 0
+        }
     }

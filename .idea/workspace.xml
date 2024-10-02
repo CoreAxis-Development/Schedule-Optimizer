@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="882a0518-315b-4f84-b9e4-b5f8576d3861" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run.bat" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/tasks/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -38,12 +39,14 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;Django Server.main.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.Unnamed.executor&quot;: &quot;Run&quot;,
+    &quot;Docker.compose.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
     &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR_AND_PREVIEW&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/makro/AppData/Local/Programs/Python/Python312&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Careers/CoreAxis_Development/TestScheduler/main/docker-compose.yml&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -53,7 +56,7 @@
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Django Server.main">
     <configuration name="main" type="Python.DjangoServer" factoryName="Django server">
       <module name="main" />
       <option name="ENV_FILES" value="" />
@@ -96,6 +99,24 @@
       <option name="customRunCommand" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="compose" type="docker-deploy" factoryName="docker-compose.yml" server-name="Docker">
+      <deployment type="docker-compose.yml">
+        <settings>
+          <option name="envFilePath" value="" />
+          <option name="services">
+            <list>
+              <option value="django" />
+            </list>
+          </option>
+          <option name="sourceFilePath" value="docker-compose.yml" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Django Server.main" />
+      <item itemvalue="Docker.compose" />
+    </list>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -120,6 +141,13 @@
       <workItem from="1727115076226" duration="224000" />
       <workItem from="1727115394638" duration="4036000" />
       <workItem from="1727380668290" duration="1234000" />
+      <workItem from="1727388978067" duration="156000" />
+      <workItem from="1727429520845" duration="365000" />
+      <workItem from="1727443307547" duration="1930000" />
+      <workItem from="1727446393826" duration="33000" />
+      <workItem from="1727456741264" duration="5000" />
+      <workItem from="1727864151020" duration="1441000" />
+      <workItem from="1727886634490" duration="3363000" />
     </task>
     <servers />
   </component>

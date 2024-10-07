@@ -68,8 +68,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DB_NAME', 'tasktracker'),
-        'USER': os.getenv('DB_USER', 'Keagan'),
-        'PASSWORD': os.getenv('DB_PASSWORD', '1512'),
+        'USER': os.getenv('DB_USER', 'newuser'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'newpassword'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '3306'),
     }

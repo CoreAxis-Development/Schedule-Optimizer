@@ -353,3 +353,15 @@ def get_yearly_tasks(request, year):
                 year_view[month][day].append(task.json())
 
     return JsonResponse(year_view)
+
+@csrf_exempt
+@login_required
+def update_buffer_period(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        buffer_period = data.get('buffer_period')
+        if buffer_period is not None:
+            request.user.user_profile.buffer_period = buffer_period
+            request.user.user_profile.save()
+            return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error'}, status=400)

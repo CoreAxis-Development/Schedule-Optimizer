@@ -9,22 +9,13 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 
-class ScheduledTask(TypedDict):
-    task_id: int
-    task_name: str
-    scheduled_date: str
-    location: str
-    due_date: str
-    hours: float
-
-
 class TaskOptimizer:
     def __init__(self, user_id: int, buffer_days: int = 7):
         self.user_id = user_id
         self.buffer_days = buffer_days
         self.today = date.today()
         self.user = self._get_user()
-        self.availability = self.user.user_profile.availability.copy()
+        self.availability = {}
         self.scheduled_tasks: List[ScheduledTask] = []
         self._initialize_availability()
 
@@ -32,11 +23,14 @@ class TaskOptimizer:
         return User.objects.select_related('user_profile').get(id=self.user_id)
 
     def _initialize_availability(self):
-        """Initialize availability for the next 90 days"""
+        """Initialize availability from the database and set default values"""
+        user_availability = self.user.user_profile.availability
         for i in range(90):  # Initialize for next 90 days
             current_date = self.today + timedelta(days=i)
             date_str = current_date.strftime('%Y-%m-%d')
-            if date_str not in self.availability:
+            if date_str in user_availability:
+                self.availability[date_str] = 8 + user_availability[date_str]
+            else:
                 self.availability[date_str] = 8.0 if not self.is_weekend(current_date) else 0.0
 
     def is_weekend(self, day: date) -> bool:
@@ -44,9 +38,7 @@ class TaskOptimizer:
 
     def get_available_hours(self, target_date: date) -> float:
         date_str = target_date.strftime('%Y-%m-%d')
-        if date_str not in self.availability:
-            self.availability[date_str] = 8.0 if not self.is_weekend(target_date) else 0.0
-        return self.availability[date_str]
+        return self.availability.get(date_str, 8.0 if not self.is_weekend(target_date) else 0.0)
 
     def find_valid_slot(self, task, buffer_end_date: date) -> Optional[date]:
         logger.debug(f"Finding slot for task {task.name}. Buffer end date: {buffer_end_date}")
@@ -58,17 +50,34 @@ class TaskOptimizer:
         while current_date < buffer_end_date:  # Strict < to ensure we're before buffer
             if current_date >= max_schedule_date and not self.is_weekend(current_date):
                 available_hours = self.get_available_hours(current_date)
-                if available_hours >= task.completion_hrs:
+
+                # Calculate total hours of tasks already scheduled for this day
+                scheduled_hours = sum(
+                    st['hours'] for st in self.scheduled_tasks
+                    if st['scheduled_date'] == current_date.strftime('%Y-%m-%d')
+                )
+
+                # Check if the task is already scheduled for this date
+                is_already_scheduled = any(
+                    scheduled_task['task_id'] == task.id and scheduled_task['scheduled_date'] == current_date.strftime(
+                        '%Y-%m-%d')
+                    for scheduled_task in self.scheduled_tasks
+                )
+
+                if is_already_scheduled:
+                    # If the task is already scheduled, keep it here regardless of availability
+                    logger.info(f"Task {task.name} remains scheduled on {current_date}")
+                    return current_date
+                elif scheduled_hours + task.completion_hrs <= available_hours:
+                    # If there's enough time available, schedule the task
                     logger.info(f"Found slot for task {task.name} on {current_date}")
                     return current_date
+
             current_date += timedelta(days=1)
         return None
 
     def schedule_task(self, task, schedule_date: date) -> None:
         date_str = schedule_date.strftime('%Y-%m-%d')
-        self.availability[date_str] -= task.completion_hrs
-
-        logger.info(f"Scheduled task {task.name} for {date_str}")
 
         self.scheduled_tasks.append({
             'task_id': task.id,
@@ -79,7 +88,6 @@ class TaskOptimizer:
             'hours': task.completion_hrs
         })
 
-    @transaction.atomic
     def optimize(self) -> Dict:
         tasks = list(self.user.tasks
                      .filter(due_date__gte=self.today)
@@ -98,6 +106,8 @@ class TaskOptimizer:
             slot = self.find_valid_slot(task, buffer_end_date)
 
             if slot:
+                # Remove any existing scheduled task for this task ID
+                self.scheduled_tasks = [st for st in self.scheduled_tasks if st['task_id'] != task.id]
                 self.schedule_task(task, slot)
             else:
                 logger.error(
@@ -117,7 +127,6 @@ class TaskOptimizer:
                 'scheduling_success_rate': (scheduled_count / total_tasks * 100) if total_tasks > 0 else 0
             }
         }
-
 
 def optimizer(user_id: int, buffer_days: int = 7) -> Dict:
     optimizer = TaskOptimizer(user_id, buffer_days)

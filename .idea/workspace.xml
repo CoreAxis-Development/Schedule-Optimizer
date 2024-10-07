@@ -6,7 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="882a0518-315b-4f84-b9e4-b5f8576d3861" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/templates/script.html" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/templates/script.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tasks/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasks/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasks/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasktracker/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasktracker/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tasktracker/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/tasktracker/urls.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,26 +40,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Django Server.main.executor&quot;: &quot;Run&quot;,
-    &quot;Docker.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;Docker.compose.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
-    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR_AND_PREVIEW&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Careers/CoreAxis_Development/TestScheduler/main/docker-compose.yml&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Django Server.main.executor": "Run",
+    "Docker.Unnamed.executor": "Run",
+    "Docker.compose.executor": "Run",
+    "Docker.run.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
+    "django.template.preview.state": "SHOW_EDITOR_AND_PREVIEW",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "D:/Careers/CoreAxis_Development/TestScheduler/ngrokTemp",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "vue.rearranger.settings.migration": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "mysql"
+    ]
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Django Server.main">
     <configuration name="main" type="Python.DjangoServer" factoryName="Django server">
       <module name="main" />
@@ -102,6 +113,38 @@
       <deployment type="docker-compose.yml">
         <settings>
           <option name="envFilePath" value="" />
+          <option name="envVars">
+            <list>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_HOST" />
+                <option name="value" value="localhost" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_NAME" />
+                <option name="value" value="tasktracker" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_PASSWORD" />
+                <option name="value" value="1512" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_PORT" />
+                <option name="value" value="3306" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_ROOT_PASSWORD" />
+                <option name="value" value="#Keagan004" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_USER" />
+                <option name="value" value="Keagan" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DJANGO_DEBUG" />
+                <option name="value" value="True" />
+              </DockerEnvVarImpl>
+            </list>
+          </option>
           <option name="services">
             <list>
               <option value="django" />
@@ -112,9 +155,51 @@
       </deployment>
       <method v="2" />
     </configuration>
+    <configuration name="run" type="docker-deploy" factoryName="dockerfile" server-name="Docker">
+      <deployment type="dockerfile">
+        <settings>
+          <option name="containerName" value="" />
+          <option name="envVars">
+            <list>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_HOST" />
+                <option name="value" value="localhost" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_NAME" />
+                <option name="value" value="tasktracker" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_PASSWORD" />
+                <option name="value" value="1512" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_PORT" />
+                <option name="value" value="3306" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_ROOT_PASSWORD" />
+                <option name="value" value="#Keagan004" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DB_USER" />
+                <option name="value" value="Keagan" />
+              </DockerEnvVarImpl>
+              <DockerEnvVarImpl>
+                <option name="name" value="DJANGO_DEBUG" />
+                <option name="value" value="True" />
+              </DockerEnvVarImpl>
+            </list>
+          </option>
+          <option name="sourceFilePath" value="Dockerfile" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Django Server.main" />
       <item itemvalue="Docker.compose" />
+      <item itemvalue="Docker.run" />
     </list>
   </component>
   <component name="SharedIndexes">
@@ -146,7 +231,10 @@
       <workItem from="1727446393826" duration="33000" />
       <workItem from="1727456741264" duration="5000" />
       <workItem from="1727864151020" duration="1441000" />
-      <workItem from="1727886634490" duration="5382000" />
+      <workItem from="1727886634490" duration="6796000" />
+      <workItem from="1727981356668" duration="1723000" />
+      <workItem from="1728035599757" duration="414000" />
+      <workItem from="1728309599790" duration="2411000" />
     </task>
     <servers />
   </component>

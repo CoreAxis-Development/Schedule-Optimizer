@@ -31,4 +31,5 @@ urlpatterns = [
     path('availability/remove', views.remove_availability, name='remove_availability'),
     path('task_list_week/', views.task_list_week, name='task_list_week'),
     path('move_task', views.move_task, name='move_task'),
+    path('update_buffer_period/', views.update_buffer_period, name='update_buffer_period'),
 ]

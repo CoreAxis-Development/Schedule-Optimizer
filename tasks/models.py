@@ -10,6 +10,7 @@ class UserProfile(models.Model):
     availability = models.JSONField()
     safety_buffer_days = models.IntegerField(default=0)
     show_tooltip = models.BooleanField(default=True)
+    buffer_period = models.IntegerField(default=7)  # Add this line
 
     def __str__(self):
         return self.user.username

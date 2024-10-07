@@ -506,8 +506,8 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
     const yearDropdown = document.getElementById('year_dropdown2');
     const bufferDropdown = document.getElementById('buffer_dropdown1');
-    const buffer = 7; // Default buffer value
     const selectedMonth = {{today.month}};
+    let buffer = {{ user.user_profile.buffer_period }};  // Initialize buffer from user profile
 
     // Initial call to updateDailyView with buffer value
     updateDailyView(2, selectedMonth, selectedYear, true, { buffer });
@@ -565,6 +565,25 @@ function updateBufferPeriod(buffer) {
         year_view = data;
         updateDailyView(1, {{today.month}}, selectedYear);
         updateDailyView(2, {{today.month}}, selectedYear);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+
+    // Update the buffer period in the database
+    fetch('/update_buffer_period/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({"buffer_period": buffer})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            console.error('Failed to update buffer period');
+        }
     })
     .catch(error => {
         console.error('Error:', error);

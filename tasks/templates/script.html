@@ -141,7 +141,8 @@ function addAvailability(year, month, day) {
 
     document.getElementById('cumulative-time').textContent = `Total task time for this day: ${cumulativeTaskTime} hours`;
 
-    hoursInput.max = 24 - (total_work_hours + availabilityDate);
+    // Remove the max attribute to allow adding any amount of hours
+    hoursInput.removeAttribute('max');
 }
 
 function removeAvailability(year, month, day) {
@@ -172,9 +173,9 @@ function removeAvailability(year, month, day) {
     document.getElementById('cumulative-time-remove').textContent = `Total task time for this day: ${cumulativeTaskTime} hours`;
 
     const hoursInput = document.getElementById('remove_hours');
-    hoursInput.max = availabilityDate;
+    // Remove the max attribute to allow removing any amount of hours
+    hoursInput.removeAttribute('max');
 }
-
 document.addEventListener('DOMContentLoaded', function() {
     const addHoursInput = document.getElementById('add_hours');
     const removeHoursInput = document.getElementById('remove_hours');
@@ -447,26 +448,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 today.setUTCHours(0, 0, 0, 0);
                 dateString = date.toISOString().split('T')[0];
                 // if we're not in the past
-                if (date>=today) {
-                    workshiftContainer.className = 'workshift-container';
+                if (date >= today) {
+                workshiftContainer.className = 'workshift-container';
 
-                    workshiftContainer.innerHTML = `
-                        ${dayOfWeek !== 0 && dayOfWeek !== 6 ? `
-                        <p>Workshift Length: 8 hrs</p>
-                        <p>Add or Remove Free Time</p>
-                        <div class="availability-controls">
-                            <div class="hour-adjustments d-flex justify-center">
-                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal" id="plus${dateString}" onclick="addAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours >= 8 ? 'disabled' : ''}>+</button>
-                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#removeAvailabilityModal" id="minus${dateString}" onclick="removeAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours <= 0 ? 'disabled' : ''}>-</button>                            </div>
+                workshiftContainer.innerHTML = `
+                    ${dayOfWeek !== 0 && dayOfWeek !== 6 ? `
+                    <p>Workshift Length: 8 hrs</p>
+                    <p>Add or Remove Free Time</p>
+                    <div class="availability-controls">
+                        <div class="hour-adjustments d-flex justify-center">
+                            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal" id="plus${dateString}" onclick="addAvailability(year=${year}, month=${month}, day=${day})">+</button>
+                            <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#removeAvailabilityModal" id="minus${dateString}" onclick="removeAvailability(year=${year}, month=${month}, day=${day})">-</button>
                         </div>
-                        <div id="availability-bars-${dateString}">
-                            <p>Free Time for Testing Remaining: ${total_work_hours} hrs</p>
-                            <div class="availability-bars">
-                                ${Array(total_work_hours).fill('<div class="bar orange"></div>').join('')}
-                                ${Array(8-total_work_hours).fill('<div class="bar grey"></div>').join('')}
-                            </div>
-                        </div>` : ''}
-                    `;}
+                    </div>
+                    <div id="availability-bars-${dateString}">
+                        <p>Free Time for Testing Remaining: ${total_work_hours} hrs</p>
+                        <div class="availability-bars">
+                            ${Array(total_work_hours).fill('<div class="bar orange"></div>').join('')}
+                            ${Array(8-total_work_hours).fill('<div class="bar grey"></div>').join('')}
+                        </div>
+                    </div>` : ''}
+                `;
+            }
+
 
                     taskList.appendChild(workshiftContainer);
                     cell.appendChild(taskList);

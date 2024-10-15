@@ -540,11 +540,11 @@ function updateAvailability(dateString) {
                     const bar = document.createElement('div');
                     bar.className = 'bar';
                     if (i < timeSpent) {
-                        bar.classList.add('grey');
+                        bar.style.backgroundColor = 'grey';
                     } else if (i < timeSpent + userSubtractedTime) {
-                        bar.classList.add('red');
+                        bar.style.backgroundColor = 'red';
                     } else {
-                        bar.classList.add('orange');
+                        bar.style.backgroundColor = 'orange';
                     }
                     barsContainer.appendChild(bar);
                 }

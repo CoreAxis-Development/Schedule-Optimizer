@@ -33,4 +33,5 @@ urlpatterns = [
     path('move_task', views.move_task, name='move_task'),
     path('update_buffer_period/', views.update_buffer_period, name='update_buffer_period'),
     path('get_availability/', views.get_availability, name='get_availability'),
+    path('get_availability_range/', views.get_availability_range, name='get_availability_range'),
 ]

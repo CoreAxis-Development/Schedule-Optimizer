@@ -347,13 +347,14 @@ function removeAvailability(dateString) {
         return true;
     };
 
-    function updateDailyView(call, month = {{today.month}}, year = {{today.year}}, refresh=false, filter={}) {
-        if (year_view === undefined || year !== lastFetchedYear || refresh || !(compareObjects(filter, previousFilter))) {
-            fetchAllYearlyTasks(call, month, year, filter);
-        } else {
-            updateViewWithData(call, month, year);
-        }
+  function updateDailyView(call, month = {{today.month}}, year = {{today.year}}, refresh = true, filter = {}) {
+    if (year_view === undefined || year !== lastFetchedYear || refresh || !(compareObjects(filter, previousFilter)) || month !== lastFetchedMonth) {
+        fetchAllYearlyTasks(call, month, year, filter);
+    } else {
+        updateViewWithData(call, month, year);
     }
+    lastFetchedMonth = month; // Track the last fetched month
+}
 
     function fetchAllYearlyTasks(call, month, year, filter) {
         fetch('/yearly_tasks/all', {
@@ -511,62 +512,85 @@ function updateBufferPeriod(buffer) {
     let year_view;
     let lastFetchedYear;
     let previousFilter;
-function updateAvailability(dateString) {
-    console.log(`Updating availability for date: ${dateString}`);
-    fetch(`/get_availability/?date=${dateString}`)
-        .then(response => response.json())
-        .then(data => {
-            const freeTime = data.free_time;
-            const timeSpent = data.time_spent;
-            const userSubtractedTime = data.user_subtracted_time;
-            console.log(`Received data - Free Time: ${freeTime}, Time Spent: ${timeSpent}, User Subtracted Time: ${userSubtractedTime}`);
+let availabilityCache = {};
 
-            const freeTimeElement = document.getElementById(`free-time-${dateString}`);
-            const barsContainer = document.getElementById(`bars-${dateString}`);
-            const plusButton = document.getElementById(`plus${dateString}`);
-            const minusButton = document.getElementById(`minus${dateString}`);
-
-            if (freeTimeElement) {
-                freeTimeElement.textContent = `Free Time for Testing Remaining: ${freeTime} hrs`;
-                console.log(`Updated free time text: ${freeTimeElement.textContent}`);
-            } else {
-                console.warn(`Free time element not found for date ${dateString}`);
-            }
-
-            if (barsContainer) {
-                barsContainer.innerHTML = '';
-                const totalHours = 8;
-                for (let i = 0; i < totalHours; i++) {
-                    const bar = document.createElement('div');
-                    bar.className = 'bar';
-                    if (i < timeSpent) {
-                        bar.classList.add('grey');
-                    } else if (i < timeSpent + userSubtractedTime) {
-                        bar.classList.add('red');
-                    } else {
-                        bar.classList.add('orange');
-                    }
-                    barsContainer.appendChild(bar);
-                }
-            } else {
-                console.warn(`Bars container not found for date ${dateString}`);
-            }
-
-            if (plusButton) {
-                plusButton.disabled = userSubtractedTime <= 0;
-                console.log(`Plus button disabled: ${plusButton.disabled}, with data: ${userSubtractedTime}`);
-            } else {
-                console.warn(`Plus button not found for date ${dateString}`);
-            }
-
-            if (minusButton) {
-                minusButton.disabled = (freeTime + timeSpent) <= 0;
-                console.log(`Minus button disabled: ${minusButton.disabled}`);
-            } else {
-                console.warn(`Minus button not found for date ${dateString}`);
-            }
+function fetchAvailabilityRange(startDate, endDate) {
+    return fetch('/get_availability_range/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate
         })
-        .catch(error => console.error('Error updating availability:', error));
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Update the cache with new data
+            Object.assign(availabilityCache, data.data);
+        }
+        return data;
+    });
+}
+
+function updateAvailability(dateString) {
+    if (availabilityCache[dateString]) {
+        updateAvailabilityUI(dateString, availabilityCache[dateString]);
+    } else {
+        const startDate = new Date(dateString);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 30);  // Fetch a month's worth of data
+
+        fetchAvailabilityRange(
+            startDate.toISOString().split('T')[0],
+            endDate.toISOString().split('T')[0]
+        ).then(() => {
+            updateAvailabilityUI(dateString, availabilityCache[dateString]);
+        });
+    }
+}
+
+function updateAvailabilityUI(dateString, data) {
+    const freeTime = data.free_time;
+    const timeSpent = data.time_spent;
+    const userSubtractedTime = data.user_subtracted_time;
+
+    const freeTimeElement = document.getElementById(`free-time-${dateString}`);
+    const barsContainer = document.getElementById(`bars-${dateString}`);
+    const plusButton = document.getElementById(`plus${dateString}`);
+    const minusButton = document.getElementById(`minus${dateString}`);
+
+    if (freeTimeElement) {
+        freeTimeElement.textContent = `Free Time for Testing Remaining: ${freeTime} hrs`;
+    }
+
+    if (barsContainer) {
+        barsContainer.innerHTML = '';
+        const totalHours = 8;
+        for (let i = 0; i < totalHours; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            if (i < timeSpent) {
+                bar.classList.add('grey');
+            } else if (i < timeSpent + userSubtractedTime) {
+                bar.classList.add('orange-dark');
+            } else {
+                bar.classList.add('orange-light');
+            }
+            barsContainer.appendChild(bar);
+        }
+    }
+
+    if (plusButton) {
+        plusButton.disabled = userSubtractedTime <= 0;
+    }
+
+    if (minusButton) {
+        minusButton.disabled = (freeTime + timeSpent) <= 0;
+    }
 }
    document.addEventListener('DOMContentLoaded', function() {
         const moveTaskForm = document.getElementById('moveTaskForm');

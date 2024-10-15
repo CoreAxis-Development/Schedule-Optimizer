@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.contrib.auth.models import User
 import logging
 from .utils import optimizer
-
+from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 
@@ -400,3 +400,52 @@ def get_availability(request):
     logger.info(f"Response data: {response_data}, for date {date_str}")
 
     return JsonResponse(response_data)
+
+
+@require_POST
+def get_availability_range(request):
+    data = json.loads(request.body)
+    start_date_str = data.get('start_date')
+    end_date_str = data.get('end_date')
+
+    if not start_date_str or not end_date_str:
+        return JsonResponse({'status': 'error', 'message': 'Start and end dates are required'}, status=400)
+
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid date format'}, status=400)
+
+    user_profile = request.user.user_profile
+
+    # Try to get cached optimizer results
+    cache_key = f'optimizer_results_{request.user.id}'
+    optimizer_result = cache.get(cache_key)
+
+    if not optimizer_result:
+        # If not in cache, run the optimizer and cache the results
+        optimizer_result = optimizer(request.user.id, user_profile.buffer_period)
+        cache.set(cache_key, optimizer_result, 60 * 15)  # Cache for 15 minutes
+
+    scheduled_tasks = optimizer_result['scheduled_tasks']
+
+    availability_data = {}
+    current_date = start_date
+    while current_date <= end_date:
+        date_str = current_date.strftime('%Y-%m-%d')
+        availability = user_profile.availability.get(date_str, 0)
+        user_subtracted_time = 8 - availability
+        tasks_on_date = [task for task in scheduled_tasks if task['scheduled_date'] == date_str]
+        time_spent = sum(task['hours'] for task in tasks_on_date)
+        free_time = availability - time_spent
+
+        availability_data[date_str] = {
+            'time_spent': time_spent,
+            'user_subtracted_time': user_subtracted_time,
+            'free_time': free_time
+        }
+
+        current_date += timedelta(days=1)
+
+    return JsonResponse({'status': 'success', 'data': availability_data})

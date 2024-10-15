@@ -195,9 +195,6 @@ a:hover {
   width: 100%;
 }
 
-.orange {
-  background-color: #EC8105;
-}
 
 .grey {
   background-color: grey;
@@ -324,4 +321,28 @@ a:hover {
     background-color: #fff3cd;
     border-color: #ffeeba;
     margin-top: 10px;
+}
+
+.red {
+    background-color: red;
+}
+
+.orange {
+    background-color: orange;
+}
+
+.green {
+    background-color: green;
+}
+
+.grey {
+    background-color: grey;
+}
+
+.orange-dark {
+    background-color: #cc7000; /* Darker shade of orange */
+}
+
+.orange-light {
+    background-color: #ffb84d; /* Lighter shade of orange */
 }

@@ -8,7 +8,7 @@ import json
 from datetime import date, timedelta
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.contrib.auth.models import User
 import logging
 from .utils import optimizer
@@ -365,3 +365,38 @@ def update_buffer_period(request):
             request.user.user_profile.save()
             return JsonResponse({'status': 'success'})
     return JsonResponse({'status': 'error'}, status=400)
+
+
+@require_GET
+def get_availability(request):
+    date_str = request.GET.get('date')
+    if not date_str:
+        return JsonResponse({'status': 'error', 'message': 'Date parameter is required'}, status=400)
+
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid date format'}, status=400)
+
+    user_profile = request.user.user_profile
+    availability = user_profile.availability.get(date_str, 0)
+    user_subtracted_time=8-availability
+    # Use the optimizer to get scheduled tasks
+    optimizer_result = optimizer(request.user.id, user_profile.buffer_period)
+    scheduled_tasks = optimizer_result['scheduled_tasks']
+
+    # Filter tasks scheduled on the given date
+    tasks_on_date = [task for task in scheduled_tasks if task['scheduled_date'] == date_str]
+    time_spent = sum(task['hours'] for task in tasks_on_date)
+
+    free_time = availability-time_spent
+
+    response_data = {
+        'time_spent': time_spent,
+        'user_subtracted_time': user_subtracted_time,
+        'free_time': free_time
+    }
+
+    logger.info(f"Response data: {response_data}, for date {date_str}")
+
+    return JsonResponse(response_data)

@@ -29,7 +29,7 @@ class TaskOptimizer:
             current_date = self.today + timedelta(days=i)
             date_str = current_date.strftime('%Y-%m-%d')
             if date_str in user_availability:
-                self.availability[date_str] = 8 + user_availability[date_str]
+                self.availability[date_str] = user_availability[date_str]
             else:
                 self.availability[date_str] = 8.0 if not self.is_weekend(current_date) else 0.0
 
@@ -41,7 +41,6 @@ class TaskOptimizer:
         return self.availability.get(date_str, 8.0 if not self.is_weekend(target_date) else 0.0)
 
     def find_valid_slot(self, task, buffer_end_date: date) -> Optional[date]:
-        logger.debug(f"Finding slot for task {task.name}. Buffer end date: {buffer_end_date}")
 
         max_days_before_buffer = max(30, 3 * self.buffer_days)
         max_schedule_date = buffer_end_date - timedelta(days=max_days_before_buffer)
@@ -65,12 +64,9 @@ class TaskOptimizer:
                 )
 
                 if is_already_scheduled:
-                    # If the task is already scheduled, keep it here regardless of availability
-                    logger.info(f"Task {task.name} remains scheduled on {current_date}")
                     return current_date
                 elif scheduled_hours + task.completion_hrs <= available_hours:
                     # If there's enough time available, schedule the task
-                    logger.info(f"Found slot for task {task.name} on {current_date}")
                     return current_date
 
             current_date += timedelta(days=1)
@@ -93,7 +89,6 @@ class TaskOptimizer:
                      .filter(due_date__gte=self.today)
                      .order_by('due_date'))
 
-        logger.info(f"Starting optimization for {len(tasks)} tasks")
 
         for task in tasks:
             buffer_end_date = task.due_date - timedelta(days=self.buffer_days)

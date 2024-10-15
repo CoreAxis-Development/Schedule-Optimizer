@@ -1,80 +1,232 @@
 <script>
     // Test Dates
-    function updateSelectedView(sample = 7) {
-        fetch('/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({"sample": sample})
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Handle the response data here
-            // console.log(data);
-            document.getElementById('test-dates').innerHTML = data.text;
-            var viewText;
-            switch(sample) {
-                case 7:
-                    viewText = "Next 7 days";
-                    break;
-                case 14:
-                    viewText = "Next 14 days";
-                    break;
-                case 28:
-                    viewText = "Next 28 days";
-                    break;
-                default:
-                    viewText = "Overview";
-            }
-            document.getElementById('selected-view').textContent = viewText;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }    
-    //document.addEventListener('DOMContentLoaded', updateSelectedView);
-    // Sub-view on Test Dates
-    var selectedLocation = ""
-    function fetchYearlyTasks(year, locationId) {
-        fetch('/yearly_tasks/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({"year": year, "location_id": locationId})
-        })
-        .then(response => response.json())
-        .then(data => {
-            const subContainer = document.getElementById('sub_container');
-            const tableBody = subContainer.querySelector('tbody');
-            tableBody.innerHTML = `
-                    <td rowspan=${data.length +1}>${locationId}</td>`; // Clear existing content
+     function updateViewWithData(call, month, year) {
+    const subContainer = document.getElementById('daily_tasks' + call);
+    const tableBody = subContainer.querySelector('tbody');
+    tableBody.innerHTML = '';
 
-            for (const [taskName, taskData] of Object.entries(data.tasks)) {
-                const row = document.createElement('tr');
-                row.innerHTML += `
-                    <td>${Object.keys(data.tasks).indexOf(taskName) + 1}</td>
-                    <td>${taskName}</td>
-                    <td>${getInterval(taskData.frequency)}</td>
-                    ${getMonthCells(taskData.occurences, taskName)}
-                `;
-                
+    const daysInMonth = new Date(year, month, 0).getDate();
+    let dayOfWeek = new Date(year, month - 1, 1).getDay();
+
+    if (call == 1) {
+        let row = document.createElement('tr');
+        row.style.height = '20vh';
+        const tasks = document.getElementById("task_filter_2");
+        tasks.innerHTML = "";
+        Object.entries(year_view.unique_tasks).forEach(([i,task]) => {
+            tasks.innerHTML += `<div class = 'form-check d-flex poppins-regular'>
+                    <input class="form-check-input me-1 px-1" type="checkbox" value="${task}">
+                    <label class="form-check-label">
+                        ${task}
+                    </label></div>`
+        });
+        const locations = document.getElementById("location_filter_2");
+        locations.innerHTML = "";
+        Object.entries(year_view.unique_locations).forEach(([i,task]) => {
+            locations.innerHTML += `<div class = 'ml-2 form-check d-flex poppins-regular'>
+                    <input class="form-check-input me-1 px-1" type="checkbox" value="${task}">
+                    <label class="form-check-label disabled">
+                        ${task}
+                    </label></div>`
+        });
+
+        // Add empty cells for days before the 1st of the month
+        for (let i = 0; i < dayOfWeek; i++) {
+            let cell = document.createElement('td');
+            row.appendChild(cell);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            let cell = document.createElement('td');
+            cell.textContent = day;
+
+            // Add tasks for this day
+            var daily_tasks = year_view[month][day]
+            if (daily_tasks) {
+                var selectedLocation = ""
+                var selectedMilepost = ""
+                let taskList = document.createElement('ul');
+                taskList.style.paddingLeft = '0';
+                Object.entries(daily_tasks).forEach(([key, task]) => {
+                    // add location of task item if location is different from the previous one
+                    if (selectedLocation != task.location) {
+                        let drive_dist = Math.abs(task.milepost - selectedMilepost).toFixed(2);
+                        selectedMilepost = task.milepost;
+                        selectedLocation = task.location;
+                        let location = document.createElement('li');
+                        if (taskList.childElementCount == 0) {
+                            location.textContent = `Start at ${task.location}`;
+                        } else {
+                            location.textContent = `Drive to ${task.location} (${drive_dist} Mi.)`;
+                        }
+                        location.style.listStyleType = 'none';
+                        location.style.textAlign = 'left';
+                        location.style.fontWeight = 'bold';
+                        taskList.appendChild(location);
+                    }
+                    let taskItem = document.createElement('li');
+                    taskItem.textContent = `${task.name} (${task.time_taken} hrs)`;
+                    taskItem.style.listStyleType = 'none';
+                    taskItem.style.textAlign = 'left';
+                    taskItem.style.cursor = 'pointer';
+                    taskItem.dataset.bsToggle = "modal";
+                    taskItem.dataset.bsTarget = "#moveTaskModal";
+                    taskItem.dataset.warning = task.warning;
+                    // if the task has a warning add a warning icon
+                    if (task.warning) {
+                        taskItem.style.fontWeight = 'bold';
+                        taskItem.style.color = 'red';
+                        taskItem.innerHTML += `<i class="bi bi-exclamation-triangle-fill" data-bs-toggle="tooltip" title="${task.warning}"></i>`;
+                    }
+                    // When creating task items in updateViewWithData function, update the onclick handler:
+                    taskItem.onclick = function() {
+                        console.log(task);
+                        moveTask(task.id, task.name, `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`, task.deadline, task.warning);
+                    };
+
+                    taskList.appendChild(taskItem);
+                });
+                cell.appendChild(taskList);
+            }
+
+            if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) {
+                cell.classList.add('bg-primary');
+            }
+
+            row.appendChild(cell);
+
+            if (dayOfWeek === 6 || day === daysInMonth) {
                 tableBody.appendChild(row);
+                row = document.createElement('tr');
             }
 
-            // Show sub_container and hide test_dates
-            subContainer.hidden = false;
-            document.getElementById('test_dates').hidden = true;
-            document.getElementById('sample_dropdown').hidden = true;
-            document.getElementById('year_dropdown').hidden = false;
-            document.getElementById('sel_year').textContent = year;
-            document.getElementById('overview_button').hidden = false;
-        });
-        selectedLocation = locationId
+            dayOfWeek = (dayOfWeek + 1) % 7;
+        }
+
+        // Add empty cells for days after the last day of the month
+        while (dayOfWeek !== 0) {
+            let cell = document.createElement('td');
+            row.appendChild(cell);
+            dayOfWeek = (dayOfWeek + 1) % 7;
+        }
+
+        // Append the last row if it's not empty
+        if (row.cells.length > 0) {
+            tableBody.appendChild(row);
+        }
+    } else if (call == 2) {
+        let row = document.createElement('tr');
+        row.style.height = '20vh';
+        row.style.alignItems = 'center';
+        const monthDropdown = document.getElementById('month_dropdown2');
+        const monthOptions = monthDropdown.querySelectorAll('input');
+        if (year > {{today.year}}) {
+            monthOptions.forEach(option => {
+                option.disabled = false;
+            });
+        } else {
+            monthOptions.forEach(option => {
+                option.disabled = true;
+                if (option.getAttribute('data-month') >= {{today.month}}) {
+                    option.disabled = false;
+                }
+                if (parseInt(month) < {{today.month}}) {
+                    month = {{today.month}};
+                    if (option.getAttribute('data-month') == {{today.month}}) {
+                        option.click();
+                    }
+                }
+            });
+        }
+
+        let currentDate = new Date();
+        let currentWeekStart = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
+        currentWeekStart.setHours(0, 0, 0, 0);
+
+        let firstDayOfMonth = new Date(year, month - 1, 1);
+
+        let startDay = 1;
+        if (firstDayOfMonth < currentWeekStart) {
+            startDay = currentWeekStart.getDate();
+            dayOfWeek = currentWeekStart.getDay();
+        }
+
+        for (let i = 0; i < dayOfWeek; i++) {
+            let cell = document.createElement('td');
+            row.appendChild(cell);
+        }
+
+        for (let day = startDay; day <= daysInMonth; day++) {
+            let cell = document.createElement('td');
+            cell.textContent = day;
+
+            let taskList = document.createElement('ul');
+            taskList.style.paddingLeft = '0';
+            taskList.style.alignItems = 'left';
+
+            let date = new Date(Date.UTC(year, month - 1, day));
+            date.setUTCHours(0, 0, 0, 0);
+            let dateString = date.toISOString().split('T')[0];
+
+            let workshiftContainer = document.createElement('div');
+            let today = new Date();
+            today.setUTCHours(0, 0, 0, 0);
+
+            if (date >= today) {
+                workshiftContainer.className = 'workshift-container';
+                workshiftContainer.id = `workshift-${dateString}`;
+
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    workshiftContainer.innerHTML = `
+                        <p>Workshift Length: 8 hrs</p>
+                        <p>Add or Remove Free Time</p>
+                        <div class="availability-controls">
+                            <div class="hour-adjustments d-flex justify-center">
+                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal" id="plus${dateString}" onclick="addAvailability('${dateString}')">+</button>
+                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#removeAvailabilityModal" id="minus${dateString}" onclick="removeAvailability('${dateString}')">-</button>
+                            </div>
+                        </div>
+                        <div id="availability-bars-${dateString}">
+                            <p id="free-time-${dateString}"></p>
+                            <div class="availability-bars" id="bars-${dateString}"></div>
+                        </div>
+                    `;
+                }
+
+                updateAvailability(dateString);
+            }
+
+            taskList.appendChild(workshiftContainer);
+            cell.appendChild(taskList);
+
+            if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) {
+                cell.classList.add('bg-primary');
+            }
+
+            row.appendChild(cell);
+
+            if (dayOfWeek === 6 || day === daysInMonth) {
+                tableBody.appendChild(row);
+                row = document.createElement('tr');
+                row.style.height = '20vh';
+                row.style.alignItems = 'center';
+            }
+
+            dayOfWeek = (dayOfWeek + 1) % 7;
+        }
+
+        while (dayOfWeek !== 0) {
+            let cell = document.createElement('td');
+            row.appendChild(cell);
+            dayOfWeek = (dayOfWeek + 1) % 7;
+        }
+
+        if (row.cells.length > 0) {
+            tableBody.appendChild(row);
+        }
     }
+}
+
 
     function getInterval(frequency) {
         switch(frequency) {
@@ -106,102 +258,76 @@
         document.getElementById('sample_dropdown').hidden = false;
         document.getElementById('year_dropdown').hidden = true;
     }
-    // Daily Tasks & Availability 
-let year_view;
-let lastFetchedYear;
-let previousFilter;
 
-function addAvailability(year, month, day) {
-    let date = new Date(Date.UTC(year, month - 1, day));
-    date.setUTCHours(0, 0, 0, 0);
-    let datestr = date.toISOString().split('T')[0];
-    const availability = JSON.parse("{{ user.user_profile.availability|safe }}".replace(/'/g, '"'));
-    const availabilityDate = availability[datestr] || 0;
-    var daily_tasks = year_view[month][day];
-    var total_work_hours = 8;
-    var freeTime = 8 + availabilityDate;
-    var cumulativeTaskTime = 0;
-
-    if (daily_tasks) {
-        Object.entries(daily_tasks).forEach(([key, task]) => {
-            cumulativeTaskTime += task.time_taken;
-            freeTime -= task.time_taken;
-        });
-    }
-
-    const hoursForm = document.getElementById('addAvailabilityForm');
-    hoursForm.reset();
-    const hoursInput = document.getElementById('add_hours');
-    hoursForm.dataset.freetime = freeTime;
-    hoursForm.dataset.cumulative = cumulativeTaskTime;
-    document.getElementById('addAvailabilityModalLabel').textContent = `Add Availability to ${datestr}:`;
-
-    const addDateInput = document.getElementById('add_date');
-    addDateInput.value = datestr;
-
-    document.getElementById('cumulative-time').textContent = `Total task time for this day: ${cumulativeTaskTime} hours`;
-
-    hoursInput.max = 24 - (total_work_hours + availabilityDate);
-}
-
-function removeAvailability(year, month, day) {
-    let date = new Date(Date.UTC(year, month - 1, day));
-    date.setUTCHours(0, 0, 0, 0);
-    let datestr = date.toISOString().split('T')[0];
-    const availability = JSON.parse("{{ user.user_profile.availability|safe }}".replace(/'/g, '"'));
-    const availabilityDate = availability[datestr] || 0;
-    var daily_tasks = year_view[month][day];
-    var total_work_hours = 8;
-    var freeTime = total_work_hours + availabilityDate;
-    var cumulativeTaskTime = 0;
-
-    if (daily_tasks) {
-        Object.entries(daily_tasks).forEach(([key, task]) => {
-            cumulativeTaskTime += task.time_taken;
-            freeTime -= task.time_taken;
-        });
-    }
-
-    const hoursForm = document.getElementById('removeAvailabilityForm');
-    hoursForm.reset();
-    hoursForm.dataset.freetime = freeTime;
-    hoursForm.dataset.cumulative = cumulativeTaskTime;
-    document.getElementById('remove_date').value = datestr;
-    document.getElementById('removeAvailabilityModalLabel').textContent = `Remove Availability from ${datestr}:`;
-
-    document.getElementById('cumulative-time-remove').textContent = `Total task time for this day: ${cumulativeTaskTime} hours`;
-
-    const hoursInput = document.getElementById('remove_hours');
-    hoursInput.max = availabilityDate;
-}
-
-document.addEventListener('DOMContentLoaded', function() {
+function addAvailability(dateString) {
     const addHoursInput = document.getElementById('add_hours');
-    const removeHoursInput = document.getElementById('remove_hours');
     const addWarning = document.getElementById('add-warning');
-    const removeWarning = document.getElementById('remove-warning');
 
     addHoursInput.addEventListener('input', function() {
         const hours = parseFloat(this.value);
-        if (hours > 0) {
-            addWarning.textContent = "Adding availability may affect tasks scheduled on other days.";
-        } else {
-            addWarning.textContent = "";
-        }
+        fetch(`/get_availability/?date=${dateString}`)
+            .then(response => response.json())
+            .then(data => {
+                const userSubtractedTime = data.user_subtracted_time;
+                if (hours > userSubtractedTime) {
+                    addWarning.textContent = `You can only add up to ${userSubtractedTime} hours. Adding availability may affect tasks scheduled on other days.`;
+                    this.value = userSubtractedTime;
+                } else {
+                    addWarning.textContent = "Adding availability may affect tasks scheduled on other days.";
+                }
+            })
+            .catch(error => console.error('Error fetching availability:', error));
     });
+
+    document.getElementById('add_date').value = dateString;
+    document.getElementById('addAvailabilityModalLabel').textContent = `Add Availability to ${dateString}:`;
+}
+
+function removeAvailability(dateString) {
+    const removeHoursInput = document.getElementById('remove_hours');
+    const removeWarning = document.getElementById('remove-warning');
 
     removeHoursInput.addEventListener('input', function() {
         const hours = parseFloat(this.value);
-        const freeTime = parseFloat(this.form.dataset.freetime);
-        const cumulativeTime = parseFloat(this.form.dataset.cumulative);
-
-        if (freeTime - hours < cumulativeTime) {
-            removeWarning.textContent = "Warning: Removing this much time will make it impossible to complete all scheduled tasks. Changing this may also affect other tasks scheduled on other days.";
-        } else {
-            removeWarning.textContent = "Removing availability may affect tasks scheduled on other days.";
-        }
+        fetch(`/get_availability/?date=${dateString}`)
+            .then(response => response.json())
+            .then(data => {
+                const freeTime = data.free_time;
+                const timeSpent = data.time_spent;
+                const maxRemovableTime = freeTime + timeSpent;
+                if (hours > maxRemovableTime) {
+                    removeWarning.textContent = `You can only remove up to ${maxRemovableTime} hours. Removing availability may affect tasks scheduled on other days.`;
+                    this.value = maxRemovableTime;
+                } else {
+                    removeWarning.textContent = "Removing availability may affect tasks scheduled on other days.";
+                }
+            })
+            .catch(error => console.error('Error fetching availability:', error));
     });
-});
+
+    document.getElementById('remove_date').value = dateString;
+    document.getElementById('removeAvailabilityModalLabel').textContent = `Remove Availability from ${dateString}:`;
+}
+    document.addEventListener('DOMContentLoaded', function() {
+        const addHoursInput = document.getElementById('add_hours');
+        const removeHoursInput = document.getElementById('remove_hours');
+        const addWarning = document.getElementById('add-warning');
+        const removeWarning = document.getElementById('remove-warning');
+
+        addHoursInput.addEventListener('input', function() {
+            const hours = parseFloat(this.value);
+            if (hours > 0) {
+                addWarning.textContent = "Adding availability may affect tasks scheduled on other days.";
+            } else {
+                addWarning.textContent = "";
+            }
+        });
+
+        removeHoursInput.addEventListener('input', function() {
+            const hours = parseFloat(this.value);
+            removeWarning.textContent = "Removing availability may affect tasks scheduled on other days.";
+        });
+    });
 
     compareObjects = function(o1, o2){
         for(var p in o1){
@@ -245,260 +371,6 @@ document.addEventListener('DOMContentLoaded', function() {
             previousFilter = filter;
             updateViewWithData(call, month, year);
         });
-    }
-    function updateViewWithData(call, month, year) {
-        const subContainer = document.getElementById('daily_tasks' + call);
-        const tableBody = subContainer.querySelector('tbody');
-        tableBody.innerHTML = '';
-
-        const daysInMonth = new Date(year, month, 0).getDate();
-        let dayOfWeek = new Date(year, month - 1, 1).getDay();
-
-        if (call == 1) {
-            let row = document.createElement('tr');
-            row.style.height = '20vh';
-            const tasks = document.getElementById("task_filter_2");
-                tasks.innerHTML = "";
-            Object.entries(year_view.unique_tasks).forEach(([i,task]) => {
-                tasks.innerHTML += `<div class = 'form-check d-flex poppins-regular'>
-                        <input class="form-check-input me-1 px-1" type="checkbox" value="${task}">
-                        <label class="form-check-label">
-                            ${task}
-                        </label></div>`
-            });
-            const locations = document.getElementById("location_filter_2");
-                locations.innerHTML = "";
-            Object.entries(year_view.unique_locations).forEach(([i,task]) => {
-                locations.innerHTML += `<div class = 'ml-2 form-check d-flex poppins-regular'>
-                        <input class="form-check-input me-1 px-1" type="checkbox" value="${task}">
-                        <label class="form-check-label disabled">
-                            ${task}
-                        </label></div>`
-            });
-
-            // Add empty cells for days before the 1st of the month
-            for (let i = 0; i < dayOfWeek; i++) {
-                let cell = document.createElement('td');
-                row.appendChild(cell);
-            }
-
-            for (let day = 1; day <= daysInMonth; day++) {
-                let cell = document.createElement('td');
-                cell.textContent = day;
-
-                // Add tasks for this day
-                var daily_tasks = year_view[month][day]
-                if (daily_tasks) {
-                    var selectedLocation = ""
-                    var selectedMilepost = ""
-                    let taskList = document.createElement('ul');
-                    taskList.style.paddingLeft = '0';
-                    Object.entries(daily_tasks).forEach(([key, task]) => {
-                        // add kocation of task item if location is different from the previous one'
-                        if (selectedLocation!= task.location) {
-                            let drive_dist = Math.abs(task.milepost - selectedMilepost).toFixed(2);
-                            selectedMilepost = task.milepost;
-                            selectedLocation = task.location;
-                            let location = document.createElement('li');
-                            if (taskList.childElementCount == 0) {
-                                location.textContent = `Start at ${task.location}`;}
-                            else {
-                                location.textContent = `Drive to ${task.location} (${drive_dist} Mi.)`;}
-                            location.style.listStyleType = 'none';
-                            location.style.textAlign = 'left';
-                            location.style.fontWeight = 'bold';
-                            taskList.appendChild(location);
-                        }
-                        let taskItem = document.createElement('li');
-                        taskItem.textContent = `${task.name} (${task.time_taken} hrs)`;
-                        taskItem.style.listStyleType = 'none';
-                        taskItem.style.textAlign = 'left';
-                        taskItem.style.cursor = 'pointer';
-                        taskItem.dataset.bsToggle = "modal";
-                        taskItem.dataset.bsTarget = "#moveTaskModal";
-                        taskItem.dataset.warning = task.warning;
-                        // if the task has a warning add a warning icon
-                        if (task.warning) {
-                            taskItem.style.fontWeight = 'bold';
-                            taskItem.style.color = 'red';
-                            taskItem.innerHTML += `<i class="bi bi-exclamation-triangle-fill" data-bs-toggle="tooltip" title="${task.warning}"></i>`;
-                        }
-                        // When creating task items in updateViewWithData function, update the onclick handler:
-                        taskItem.onclick = function() {
-                            console.log(task);
-                            moveTask(task.id, task.name, `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`, task.deadline, task.warning);
-                        };
-
-                        taskList.appendChild(taskItem);
-                    });
-                    cell.appendChild(taskList);
-                }
-
-                if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) {
-                    cell.classList.add('bg-primary');
-                }
-
-                row.appendChild(cell);
-
-                if (dayOfWeek === 6 || day === daysInMonth) {
-                    tableBody.appendChild(row);
-                    row = document.createElement('tr');
-                }
-
-                dayOfWeek = (dayOfWeek + 1) % 7;
-            }
-
-            // Add empty cells for days after the last day of the month
-            while (dayOfWeek !== 0) {
-                let cell = document.createElement('td');
-                row.appendChild(cell);
-                dayOfWeek = (dayOfWeek + 1) % 7;
-            }
-
-            // Append the last row if it's not empty
-            if (row.cells.length > 0) {
-                tableBody.appendChild(row);
-            };
-
-        }
-        else {if (call == 2) {
-            let row = document.createElement('tr');
-            row.style.height = '20vh';
-            row.style.alignItems = 'center';
-            const monthDropdown = document.getElementById('month_dropdown2');
-            const monthOptions = monthDropdown.querySelectorAll('input');
-            if (year>{{today.year}}) {
-                // console.log(year);
-                monthOptions.forEach(option => {
-                    option.disabled = false;
-                });
-            }
-            else{
-                // Disable all months before the current one
-                monthOptions.forEach(option => {
-                    option.disabled = true;
-                    if ( option.getAttribute('data-month') >= {{today.month}}) {
-                        option.disabled = false;
-                    };
-                    if (parseInt(month) < {{today.month}}) {
-                        month = {{today.month}};
-                        if (option.getAttribute('data-month') == {{today.month}}) {
-                            option.click();
-                        }
-                    }
-                });
-            }
-            // Get the current date
-            let currentDate = new Date();
-            let currentWeekStart = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
-            currentWeekStart.setHours(0, 0, 0, 0);
-
-            // Calculate the first day of the month
-            let firstDayOfMonth = new Date(year, month - 1, 1);
-
-            // If the first day of the month is before the current week, adjust the start day
-            let startDay = 1;
-            if (firstDayOfMonth < currentWeekStart) {
-                startDay = currentWeekStart.getDate();
-                dayOfWeek = currentWeekStart.getDay();
-            }
-
-            // Add empty cells for days before the start day of the week
-            for (let i = 0; i < dayOfWeek; i++) {
-                let cell = document.createElement('td');
-                row.appendChild(cell);
-            }
-
-            for (let day = startDay; day <= daysInMonth; day++) {
-                let cell = document.createElement('td');
-                cell.textContent = day;
-
-                // Add workshifts for this day
-                var daily_tasks = year_view[month][day]
-                    var selectedLocation = ""
-                    var selectedMilepost = ""
-                    let taskList = document.createElement('ul');
-                    taskList.style.paddingLeft = '0';
-                    taskList.style.alignItems = 'left';
-                    var total_work_hours = 8;
-                if (daily_tasks) {
-                    Object.entries(daily_tasks).forEach(([key, task]) => {
-                        total_work_hours -= task.time_taken;
-                    });
-                }
-                availability = JSON.parse("{{ user.user_profile.availability|safe }}".replace(/'/g, '"'));
-                let dated = new Date(year, month - 1, day);
-
-                let date = new Date(Date.UTC(year, month - 1, day));
-                date.setUTCHours(0, 0, 0, 0);
-                let dateString = date.toISOString().split('T')[0];
-                let twh = availability[dateString] || 0; // Default to 0 if not set
-
-                total_work_hours += twh;
-                if (total_work_hours > 8) {
-                    total_work_hours = 8;
-                }
-                else if (total_work_hours < 0) {
-                    total_work_hours = 0;
-                }
-
-                let workshiftContainer = document.createElement('div');
-                today = new Date();
-                today.setUTCHours(0, 0, 0, 0);
-                dateString = date.toISOString().split('T')[0];
-                // if we're not in the past
-                if (date>=today) {
-                    workshiftContainer.className = 'workshift-container';
-
-                    workshiftContainer.innerHTML = `
-                        ${dayOfWeek !== 0 && dayOfWeek !== 6 ? `
-                        <p>Workshift Length: 8 hrs</p>
-                        <p>Add or Remove Free Time</p>
-                        <div class="availability-controls">
-                            <div class="hour-adjustments d-flex justify-center">
-                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal" id="plus${dateString}" onclick="addAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours >= 8 ? 'disabled' : ''}>+</button>
-                                <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#removeAvailabilityModal" id="minus${dateString}" onclick="removeAvailability(year=${year}, month=${month}, day=${day})" ${total_work_hours <= 0 ? 'disabled' : ''}>-</button>                            </div>
-                        </div>
-                        <div id="availability-bars-${dateString}">
-                            <p>Free Time for Testing Remaining: ${total_work_hours} hrs</p>
-                            <div class="availability-bars">
-                                ${Array(total_work_hours).fill('<div class="bar orange"></div>').join('')}
-                                ${Array(8-total_work_hours).fill('<div class="bar grey"></div>').join('')}
-                            </div>
-                        </div>` : ''}
-                    `;}
-
-                    taskList.appendChild(workshiftContainer);
-                    cell.appendChild(taskList);
-
-                if (day == {{today.day}} && month == {{today.month}} && year == {{today.year}}) {
-                    cell.classList.add('bg-primary');
-                }
-
-                row.appendChild(cell);
-
-                if (dayOfWeek === 6 || day === daysInMonth) {
-                    tableBody.appendChild(row);
-                    row = document.createElement('tr');
-                    row.style.height = '20vh';
-                    row.style.alignItems = 'center';
-                }
-
-                dayOfWeek = (dayOfWeek + 1) % 7;
-            }
-
-            // Add empty cells for days after the last day of the month
-            while (dayOfWeek !== 0) {
-                let cell = document.createElement('td');
-                row.appendChild(cell);
-                dayOfWeek = (dayOfWeek + 1) % 7;
-            }
-
-            // Append the last row if it's not empty
-            if (row.cells.length > 0) {
-                tableBody.appendChild(row);
-            };
-        };}
     }
 
    let selectedYear = {{today.year}};
@@ -635,7 +507,67 @@ function updateBufferPeriod(buffer) {
             });
         };
     }
+     // Daily Tasks & Availability
+    let year_view;
+    let lastFetchedYear;
+    let previousFilter;
+function updateAvailability(dateString) {
+    console.log(`Updating availability for date: ${dateString}`);
+    fetch(`/get_availability/?date=${dateString}`)
+        .then(response => response.json())
+        .then(data => {
+            const freeTime = data.free_time;
+            const timeSpent = data.time_spent;
+            const userSubtractedTime = data.user_subtracted_time;
+            console.log(`Received data - Free Time: ${freeTime}, Time Spent: ${timeSpent}, Total Availability: ${userSubtractedTime}`);
 
+            const freeTimeElement = document.getElementById(`free-time-${dateString}`);
+            const barsContainer = document.getElementById(`bars-${dateString}`);
+            const plusButton = document.getElementById(`plus${dateString}`);
+            const minusButton = document.getElementById(`minus${dateString}`);
+
+            if (freeTimeElement) {
+                freeTimeElement.textContent = `Free Time for Testing Remaining: ${freeTime} hrs`;
+                console.log(`Updated free time text: ${freeTimeElement.textContent}`);
+            } else {
+                console.warn(`Free time element not found for date ${dateString}`);
+            }
+
+            if (barsContainer) {
+                barsContainer.innerHTML = '';
+                const totalHours = 8;
+                for (let i = 0; i < totalHours; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'bar';
+                    if (i < timeSpent) {
+                        bar.classList.add('grey');
+                    } else if (i < timeSpent + userSubtractedTime) {
+                        bar.classList.add('orange-dark');
+                    } else {
+                        bar.classList.add('orange-light');
+                    }
+                    barsContainer.appendChild(bar);
+                }
+            } else {
+                console.warn(`Bars container not found for date ${dateString}`);
+            }
+
+            if (plusButton) {
+                plusButton.disabled = userSubtractedTime <= 0;
+                console.log(`Plus button disabled: ${plusButton.disabled}, with data: ${userSubtractedTime}`);
+            } else {
+                console.warn(`Plus button not found for date ${dateString}`);
+            }
+
+            if (minusButton) {
+                minusButton.disabled = (freeTime + timeSpent) <= 0;
+                console.log(`Minus button disabled: ${minusButton.disabled}`);
+            } else {
+                console.warn(`Minus button not found for date ${dateString}`);
+            }
+        })
+        .catch(error => console.error('Error updating availability:', error));
+}
    document.addEventListener('DOMContentLoaded', function() {
         const moveTaskForm = document.getElementById('moveTaskForm');
         const newDateInput = document.getElementById('new_date');

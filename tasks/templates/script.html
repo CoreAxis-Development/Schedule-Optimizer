@@ -519,7 +519,7 @@ function updateAvailability(dateString) {
             const freeTime = data.free_time;
             const timeSpent = data.time_spent;
             const userSubtractedTime = data.user_subtracted_time;
-            console.log(`Received data - Free Time: ${freeTime}, Time Spent: ${timeSpent}, Total Availability: ${userSubtractedTime}`);
+            console.log(`Received data - Free Time: ${freeTime}, Time Spent: ${timeSpent}, User Subtracted Time: ${userSubtractedTime}`);
 
             const freeTimeElement = document.getElementById(`free-time-${dateString}`);
             const barsContainer = document.getElementById(`bars-${dateString}`);

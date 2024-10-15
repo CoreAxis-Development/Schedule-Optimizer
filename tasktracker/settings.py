@@ -13,9 +13,9 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-secret-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
+ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = ['*']
 # Application definition
 
 INSTALLED_APPS = [

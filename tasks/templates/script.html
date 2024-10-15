@@ -542,9 +542,9 @@ function updateAvailability(dateString) {
                     if (i < timeSpent) {
                         bar.classList.add('grey');
                     } else if (i < timeSpent + userSubtractedTime) {
-                        bar.classList.add('orange-dark');
+                        bar.classList.add('red');
                     } else {
-                        bar.classList.add('orange-light');
+                        bar.classList.add('orange');
                     }
                     barsContainer.appendChild(bar);
                 }

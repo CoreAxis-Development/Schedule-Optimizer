@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST, require_GET
 from django.contrib.auth.models import User
 import logging
 from .utils import optimizer
-
+from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 
@@ -380,15 +380,23 @@ def get_availability(request):
 
     user_profile = request.user.user_profile
     availability = user_profile.availability.get(date_str, 0)
-    user_subtracted_time=8-availability
-    # Use the optimizer to get scheduled tasks
-    optimizer_result = optimizer(request.user.id, user_profile.buffer_period)
-    scheduled_tasks = optimizer_result['scheduled_tasks']
+    user_subtracted_time = 8-availability
 
-    # Filter tasks scheduled on the given date
+    # Cache key includes user ID and buffer period to ensure uniqueness
+    cache_key = f'optimizer_result_{request.user.id}_{user_profile.buffer_period}'
+    optimizer_result = cache.get(cache_key)
+
+    if optimizer_result is None:
+        optimizer_result = optimizer(request.user.id, user_profile.buffer_period)
+        # Cache for 1 hour by default, adjust as needed
+        cache.set(cache_key, optimizer_result, 3600)
+        logger.info(f"Cache miss for {cache_key}")
+    else:
+        logger.info(f"Cache hit for {cache_key}")
+
+    scheduled_tasks = optimizer_result['scheduled_tasks']
     tasks_on_date = [task for task in scheduled_tasks if task['scheduled_date'] == date_str]
     time_spent = sum(task['hours'] for task in tasks_on_date)
-
     free_time = availability-time_spent
 
     response_data = {
@@ -397,6 +405,9 @@ def get_availability(request):
         'free_time': free_time
     }
 
-    logger.info(f"Response data: {response_data}, for date {date_str}")
-
     return JsonResponse(response_data)
+
+# Add function to invalidate cache when needed
+def invalidate_optimizer_cache(user_id, buffer_period):
+    cache_key = f'optimizer_result_{user_id}_{buffer_period}'
+    cache.delete(cache_key)

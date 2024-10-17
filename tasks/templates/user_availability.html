@@ -35,7 +35,15 @@
         These represent potential schedules and are best guesses.
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-    <div class = "secondary mt-1 table-responsive" id = "daily_tasks2">
+        <div class="legend mt-2">
+        <h5>Legend:</h5>
+        <ul class="list-unstyled">
+            <li><span class="legend-color" style="background-color: grey;"></span> Time occupied by courses</li>
+            <li><span class="legend-color" style="background-color: orange;"></span> Free</li>
+            <li><span class="legend-color" style="background-color: orangered;"></span> Time subtracted by the user</li>
+        </ul>
+    </div>
+    <div class="secondary mt-1 table-responsive" id="daily_tasks2">
         <table class="table table-bordered equal-width-columns">
             <thead>
               <tr>
@@ -48,3 +56,12 @@
         </table>
     </div>
 </div>
+
+<style>
+    .legend-color {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+    }
+</style>

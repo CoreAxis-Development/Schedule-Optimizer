@@ -35,12 +35,17 @@
         These represent potential schedules and are best guesses.
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-        <div class="legend mt-2">
-        <h5>Legend:</h5>
-        <ul class="list-unstyled">
-            <li><span class="legend-color" style="background-color: grey;"></span> Time occupied by tasks</li>
-            <li><span class="legend-color" style="background-color: orange;"></span> Free</li>
-            <li><span class="legend-color" style="background-color: orangered;"></span> Time subtracted by the user</li>
+    <div class="legend mt-2 d-flex align-items-center">
+        <ul class="list-unstyled d-flex mb-0">
+            <li class="d-flex align-items-center me-3">
+                <span class="legend-color" style="background-color: grey;"></span> Time occupied by tasks
+            </li>
+            <li class="d-flex align-items-center me-3">
+                <span class="legend-color" style="background-color: orange;"></span> Free time
+            </li>
+            <li class="d-flex align-items-center">
+                <span class="legend-color" style="background-color: orangered;"></span> Time subtracted by the user
+            </li>
         </ul>
     </div>
     <div class="secondary mt-1 table-responsive" id="daily_tasks2">
